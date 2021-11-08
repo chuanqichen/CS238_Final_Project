@@ -2,6 +2,7 @@
 Stanford AA228/CS238 Decision Making under Uncertainty Final Project
 
 Algorithm:  Monte Carlo Tree Search with Function Approximation
+
 Application: Game 2048  (https://play2048.co/)
 
 Literature Review
