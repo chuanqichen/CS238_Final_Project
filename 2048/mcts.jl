@@ -1,5 +1,4 @@
 using Game2048: bitboard_to_array, Dirs
-using ProgressBars
 
 struct MDP_mcts
     γ
