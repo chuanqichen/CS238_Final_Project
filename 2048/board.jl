@@ -39,9 +39,29 @@ end
     return mask
 end
 @provide rli.clone(env::Env2048) = Env2048(goal = env.goal, γ = env.γ, board = env.board, curr_step = env.curr_step)
-@provide rli.state(env::Env2048) = env.board
+@provide rli.state(env::Env2048) = rli.observe(env) # fully observable
 @provide rli.setstate!(env::Env2048, new_board::Bitboard) = (env.board = new_board)
 
+function GI.symmetries(env::Env2048, state::Bitboard)
+    board_rotl0 = bitboard_to_array(state)
+    board_rotl1 = board_rotl0 |> rotl90
+    board_rotl2 = board_rotl1 |> rotl90
+    board_rotl3 = board_rotl2 |> rotl90
+    board_rolt0_vflip = reverse(board_rotl0, dims=2)
+    board_rolt1_vflip = reverse(board_rotl1, dims=2)
+    board_rolt2_vflip = reverse(board_rotl2, dims=2)
+    board_rolt3_vflip = reverse(board_rotl3, dims=2)
+
+    return [
+       (board_rotl1       |> array_to_bitboard, [3,4,2,1]),
+       (board_rotl2       |> array_to_bitboard, [2,1,4,3]),
+       (board_rotl3       |> array_to_bitboard, [4,3,1,2]),
+       (board_rolt0_vflip |> array_to_bitboard, [2,1,3,4]),
+       (board_rolt1_vflip |> array_to_bitboard, [4,3,2,1]),
+       (board_rolt2_vflip |> array_to_bitboard, [1,2,4,3]),
+       (board_rolt3_vflip |> array_to_bitboard, [3,4,1,2])
+    ]
+end
 GI.render(env::Env2048) = display(env.board)
 GI.vectorize_state(env::Env2048, state::Bitboard) = convert(Array{Float32},bitboard_to_array(state))
 GI.heuristic_value(::Env2048) = 0.0
@@ -64,6 +84,18 @@ function valid_transitions(board::Bitboard)::Dict{Dirs, Bitboard}
 end
 valid_actions(s::Bitboard) = [Integer(action) for action in keys(valid_transitions(s))]
 
+
+weight_array = reshape(Vector(60:-4:0), (4,4))
+function array_to_bitboard(state)
+    bb = UInt64(0)
+    state′ = transpose(state)
+    for i in eachindex(state')
+        bb_component = UInt(state'[i]) << weight_array[i]
+        bb |= bb_component
+    end
+
+    return Bitboard(bb)
+end
 function get_linear_value(board)
     return sum(bitboard_to_array(board))
 end
