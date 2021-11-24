@@ -3,7 +3,8 @@ using AlphaZero; import AlphaZero.GI
 using CommonRLInterface; const rli = CommonRLInterface;
 
 
-using Game2048: Bitboard, Dirs, initbboard, move, bitboard_to_array
+import Game2048
+using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
 
 @with_kw mutable struct Env2048 <: AbstractEnv
     goal::Int = 2048; @assert ispow2(goal)
@@ -19,7 +20,7 @@ rli.actions(env::Env2048) = Vector(0:Dirs.size-1)
 rli.observe(env::Env2048) = env.bb_repr ? env.board : bitboard_to_array(env.board) 
 rli.terminated(env::Env2048) = (env.goal == maximum_tile_value(env.board)) || (env.curr_step > env.max_step)
 function rli.act!(env::Env2048, action::Integer) 
-    new_board = move(env.board, Dirs(action))
+    new_board = move(env.board, Dirs(action)) |> add_tile
     env.board = new_board
     env.curr_step += 1
     
@@ -95,7 +96,8 @@ GameSpec() = CommonRLInterfaceWrapper.Spec(Env2048())
 
 maximum_tile_value(board::Bitboard) = 2 ^ maximum(bitboard_to_array(board))
 
-function valid_transitions(board::Bitboard)::Dict{Dirs, Bitboard}
+function valid_transitions(s)::Dict{Dirs, Bitboard}
+    board = isa(s, Bitboard) ? s : array_to_bitboard(s)
     boards = Dict()
     for direction in instances(Dirs)
         temp_board = move(board, direction)
@@ -105,7 +107,7 @@ function valid_transitions(board::Bitboard)::Dict{Dirs, Bitboard}
     end
     return boards
 end
-valid_actions(s::Bitboard) = [Integer(action) for action in keys(valid_transitions(s))]
+valid_actions(s::Union{Bitboard,Matrix})::Vector{Int} = [Integer(action) for action in keys(valid_transitions(s))]
 
 
 weight_array = reshape(Vector(60:-4:0), (4,4))
@@ -116,9 +118,9 @@ function array_to_bitboard(state)
         bb_component = UInt(state'[i]) << weight_array[i]
         bb |= bb_component
     end
-
     return Bitboard(bb)
 end
+
 function get_linear_value(board)
     return sum(bitboard_to_array(board))
 end
@@ -133,5 +135,7 @@ function get_value(board)
     end
     return sum_all
 end
+
+Game2048.move(s::Matrix, direction::Dirs) = move(array_to_bitboard(s), direction)
 
 # AlphaZero.Scripts.test_game(GameSpec())
