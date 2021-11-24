@@ -1,4 +1,4 @@
-include("board.jl")
+include("game.jl")
 using Game2048: move, add_tile
 
 function simulate_game(curr_board)

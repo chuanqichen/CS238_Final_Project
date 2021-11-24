@@ -134,5 +134,4 @@ function get_value(board)
     return sum_all
 end
 
-AlphaZero.Scripts.test_game(GameSpec())
-
+# AlphaZero.Scripts.test_game(GameSpec())

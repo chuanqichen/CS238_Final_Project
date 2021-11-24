@@ -1,7 +1,7 @@
 using Parameters
 using CommonRLInterface; const rli = CommonRLInterface;
 
-include("board.jl")
+include("game.jl")
 include("mcts.jl")
 include("simulate.jl")
 using Game2048: move, initbboard, Dirs

@@ -1,6 +1,6 @@
 using Parameters
 using Game2048: bitboard_to_array, Dirs
-include("board.jl")
+include("game.jl")
 
 @with_kw mutable struct MonteCarloTreeSearch
     env # problem
