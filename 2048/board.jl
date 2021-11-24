@@ -11,11 +11,12 @@ using Game2048: Bitboard, Dirs, initbboard, move, bitboard_to_array
     board::Bitboard = initbboard()
     max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
     curr_step::Int = 0
+    bb_repr::Bool = false
 end
 
 rli.reset!(env::Env2048) = (env.board = initbboard())
 rli.actions(env::Env2048) = Vector(0:Dirs.size-1)
-rli.observe(env::Env2048) = env.board
+rli.observe(env::Env2048) = env.bb_repr ? env.board : bitboard_to_array(env.board) 
 rli.terminated(env::Env2048) = (env.goal == maximum_tile_value(env.board)) || (env.curr_step > env.max_step)
 function rli.act!(env::Env2048, action::Integer) 
     new_board = move(env.board, Dirs(action))
@@ -41,6 +42,7 @@ end
 @provide rli.clone(env::Env2048) = Env2048(goal = env.goal, γ = env.γ, board = env.board, curr_step = env.curr_step)
 @provide rli.state(env::Env2048) = rli.observe(env) # fully observable
 @provide rli.setstate!(env::Env2048, new_board::Bitboard) = (env.board = new_board)
+@provide rli.setstate!(env::Env2048, new_board::Matrix) = (env.board = array_to_bitboard(new_board))
 
 function GI.symmetries(env::Env2048, state::Bitboard)
     board_rotl0 = bitboard_to_array(state)
@@ -60,6 +62,27 @@ function GI.symmetries(env::Env2048, state::Bitboard)
        (board_rolt1_vflip |> array_to_bitboard, [4,3,2,1]),
        (board_rolt2_vflip |> array_to_bitboard, [1,2,4,3]),
        (board_rolt3_vflip |> array_to_bitboard, [3,4,1,2])
+    ]
+end
+
+function GI.symmetries(env::Env2048, state::Matrix)
+    board_rotl0 = state
+    board_rotl1 = board_rotl0 |> rotl90
+    board_rotl2 = board_rotl1 |> rotl90
+    board_rotl3 = board_rotl2 |> rotl90
+    board_rolt0_vflip = reverse(board_rotl0, dims=2)
+    board_rolt1_vflip = reverse(board_rotl1, dims=2)
+    board_rolt2_vflip = reverse(board_rotl2, dims=2)
+    board_rolt3_vflip = reverse(board_rotl3, dims=2)
+
+    return [
+       (board_rotl1      , [3,4,2,1]),
+       (board_rotl2      , [2,1,4,3]),
+       (board_rotl3      , [4,3,1,2]),
+       (board_rolt0_vflip, [2,1,3,4]),
+       (board_rolt1_vflip, [4,3,2,1]),
+       (board_rolt2_vflip, [1,2,4,3]),
+       (board_rolt3_vflip, [3,4,1,2])
     ]
 end
 GI.render(env::Env2048) = display(env.board)
@@ -111,5 +134,5 @@ function get_value(board)
     return sum_all
 end
 
-# AlphaZero.Scripts.test_game(GameSpec())
+AlphaZero.Scripts.test_game(GameSpec())
 
