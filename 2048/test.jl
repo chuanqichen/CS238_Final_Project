@@ -1,3 +1,6 @@
+using Parameters
+using CommonRLInterface; const rli = CommonRLInterface;
+
 include("board.jl")
 include("mcts.jl")
 include("simulate.jl")
@@ -5,7 +8,10 @@ using Game2048: move, initbboard, Dirs
 
 goal = 2048
 γ = 1.0
-env = Env2048(goal, γ)
+env = Env2048(
+    goal = goal,
+    γ = γ,
+    )
 println(actions(env))
 println([Int(a) for a in actions(env)])
 
@@ -19,7 +25,7 @@ println("m: ", m)
 
 
 mcts_struct = MonteCarloTreeSearch(
-    𝒫 = env, 
+    env = env, 
     N = Dict(),
     Q = Dict(),
     d = d, 
@@ -32,11 +38,10 @@ function play()
     init_board = initbboard()
     possible = keys(valid_transitions(init_board))
 
-
     curr_board = init_board
     while (length(possible)>0)
         action_to_take = mcts_struct(curr_board)
-        curr_board = move(curr_board, action_to_take)
+        curr_board = move(curr_board, Dirs(action_to_take))
         curr_board = add_tile(curr_board)
         possible = keys(valid_transitions(curr_board))
         display(curr_board)
