@@ -10,7 +10,7 @@ using Game2048: Dirs, bitboard_to_array, move, Bitboard
     board::Bitboard
 end
 
-function Env2048(goal::Int=2048, γ::Float64=1.0)
+function Env2048(goal::Integer=2048, γ::Float64=1.0)
     Env2048(goal=goal, γ=γ, board=initbboard())
 end
 
