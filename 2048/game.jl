@@ -95,6 +95,7 @@ GameSpec() = CommonRLInterfaceWrapper.Spec(Env2048())
 
 
 maximum_tile_value(board::Bitboard) = 2 ^ maximum(bitboard_to_array(board))
+goal_reached(env::Env2048) = env.goal == maximum_tile_value(env.board)
 
 function valid_transitions(s)::Dict{Dirs, Bitboard}
     board = isa(s, Bitboard) ? s : array_to_bitboard(s)
