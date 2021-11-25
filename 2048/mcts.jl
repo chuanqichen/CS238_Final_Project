@@ -14,53 +14,60 @@ include("game.jl")
 end
 
 function (π::MonteCarloTreeSearch)(s)
-    for k in 1:π.m
-        simulate!(π, s)
-    end
-    possible_actions = valid_actions(s)
+    @unpack env = π
 
-    dir = argmax(
+    for _ in 1:π.m
+        env_copy = rli.clone(env)
+        π.env = env_copy
+        simulate!(π, s, env_copy.curr_step, env_copy.max_step)
+    end
+    π.env = env
+    possible_actions = valid_actions(s)
+    
+    best_action = argmax(
         Dict(a=>π.Q[(s,a)] for a in possible_actions)
     )
-    return Integer(dir)
+    return best_action
+end
+
+function simulate!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
+    @unpack env, N, Q, c = π
+    @unpack goal, γ = env
+    if d ≤ 0
+        return π.U(s, env.goal, curr_step, max_step)
+    end
+
+    𝒜 = rli.actions(env)
+    if !haskey(N, (s, first(𝒜)))
+        for a in 𝒜
+            N[(s,a)] = 0
+            Q[(s,a)] = 0.0
+        end
+        return π.U(s, env.goal, curr_step, max_step)
+    end
+
+    a = explore(π, s)
+    s′, r, terminated = transition(s, a, goal, curr_step, max_step) #no reward
+    if terminated
+        return r
+    end
+    q = γ * simulate!(π, s′, curr_step+1, max_step, d-1)
+    N[(s,a)] += 1
+    Q[(s,a)] += (q-Q[(s,a)])/N[(s,a)]
+    return q
 end
 
 bonus(Nsa, Ns) = Nsa == 0 ? Inf : sqrt(log(Ns)/Nsa)
 
 function explore(π::MonteCarloTreeSearch, s)
     env, N, Q, c = π.env,  π.N, π.Q, π.c
-    possible_actions = valid_actions(s)
+    𝒜 = rli.actions(env)
 
-    Ns = sum(N[(s,a)] for a in possible_actions)
+    Ns = sum(N[(s,a)] for a in 𝒜)
     Ns = (Ns == 0) ? Inf : Ns
     dir = argmax(
-        Dict(a=>Q[(s,a)] + c*sqrt(log(Ns)/N[(s,a)]) for a in possible_actions)
+        Dict(a=>Q[(s,a)] + c*sqrt(log(Ns)/N[(s,a)]) for a in 𝒜)
     )
     return Integer(dir)
 end
 
-
-
-function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
-    if d ≤ 0
-        return π.U(s)
-    end
-    env, N, Q, c = π.env, π.N, π.Q, π.c
-    γ = env.γ
-    𝒜 = valid_actions(s)
-
-    if !haskey(N, (s, first(𝒜)))
-        for a in 𝒜
-            N[(s,a)] = 0
-            Q[(s,a)] = 0.0
-        end
-        return π.U(s)
-    end
-    a = explore(π, s)
-    r = act!(env, a) #no reward
-    s′ = env.board
-    q = γ * simulate!(π, s′, d-1)
-    N[(s,a)] += 1
-    Q[(s,a)] += (q-Q[(s,a)])/N[(s,a)]
-    return q
-end
