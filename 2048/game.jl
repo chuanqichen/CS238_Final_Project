@@ -2,8 +2,8 @@ using Parameters
 using AlphaZero; import AlphaZero.GI
 using CommonRLInterface; const rli = CommonRLInterface;
 
-
-using Game2048: Bitboard, Dirs, initbboard, move, bitboard_to_array
+import Game2048
+using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
 
 @with_kw mutable struct Env2048 <: AbstractEnv
     goal::Int = 2048; @assert ispow2(goal)
@@ -20,6 +20,7 @@ rli.observe(env::Env2048) = env.bb_repr ? env.board : bitboard_to_array(env.boar
 rli.terminated(env::Env2048) = (env.goal == maximum_tile_value(env.board)) || (env.curr_step > env.max_step)
 function rli.act!(env::Env2048, action::Integer) 
     new_board = move(env.board, Dirs(action))
+    new_board = add_tile(new_board)
     env.board = new_board
     env.curr_step += 1
     
@@ -119,9 +120,11 @@ function array_to_bitboard(state)
 
     return Bitboard(bb)
 end
+
 function get_linear_value(board)
     return sum(bitboard_to_array(board))
 end
+
 function get_value(board)
     arr = bitboard_to_array(board)
 

@@ -29,12 +29,12 @@ bonus(Nsa, Ns) = Nsa == 0 ? Inf : sqrt(log(Ns)/Nsa)
 
 function explore(π::MonteCarloTreeSearch, s)
     env, N, Q, c = π.env,  π.N, π.Q, π.c
-    possible_actions = valid_actions(s)
+    𝒜 = rli.actions(env)
 
-    Ns = sum(N[(s,a)] for a in possible_actions)
+    Ns = sum(N[(s,a)] for a in 𝒜)
     Ns = (Ns == 0) ? Inf : Ns
     dir = argmax(
-        Dict(a=>Q[(s,a)] + c*sqrt(log(Ns)/N[(s,a)]) for a in possible_actions)
+        Dict(a=>Q[(s,a)] + c*sqrt(log(Ns)/N[(s,a)]) for a in 𝒜)
     )
     return Integer(dir)
 end
@@ -47,7 +47,7 @@ function simulate!(π::MonteCarloTreeSearch, s, d=π.d)
     end
     env, N, Q, c = π.env, π.N, π.Q, π.c
     γ = env.γ
-    𝒜 = valid_actions(s)
+    𝒜 = rli.actions(env)
 
     if !haskey(N, (s, first(𝒜)))
         for a in 𝒜
