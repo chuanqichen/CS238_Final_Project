@@ -1,0 +1,77 @@
+
+Initializing a new AlphaZero environment
+
+  Initial report
+  
+    Number of network parameters: 329,605
+    Number of regularized network parameters: 324,200
+    Memory footprint per MCTS node: 280 bytes
+  
+  Running benchmark: AlphaZero
+  
+    Average reward: +0.00, redundancy: 0.0%
+  
+  Running benchmark: Network Only
+  
+    Average reward: +0.00, redundancy: 0.0%
+
+Starting iteration 1
+
+  Starting self-play
+  
+    Generating 563 samples per second on average
+    Average exploration depth: 0.7
+    MCTS memory footprint per worker: 54.60kB
+    Experience buffer size: 99 (99 distinct boards)
+  
+  Starting learning
+  
+    Optimizing the loss
+    
+         Loss       Lv       Lp     Lreg     Linv       Hp    Hpnet
+       1.9421   0.4502   1.1772   0.1641   0.1505   0.2240   1.0054
+       1.9421   0.4502   1.1772   0.1641   0.1505   0.2240   1.0054
+    
+    Launching a checkpoint evaluation
+    
+      Average reward: +0.00, redundancy: 0.0%
+  
+  Running benchmark: AlphaZero
+  
+    Average reward: +0.00, redundancy: 0.0%
+  
+  Running benchmark: Network Only
+  
+    Average reward: +0.00, redundancy: 0.0%
+
+Starting iteration 2
+
+  Starting self-play
+  
+    Generating 1,182 samples per second on average
+    Average exploration depth: 0.7
+    MCTS memory footprint per worker: 66.08kB
+    Experience buffer size: 218 (218 distinct boards)
+  
+  Starting learning
+  
+    Optimizing the loss
+    
+         Loss       Lv       Lp     Lreg     Linv       Hp    Hpnet
+       1.9861   0.4549   1.2287   0.1641   0.1383   0.2194   1.0192
+       1.4968   0.3582   0.8203   0.1642   0.1542   0.2194   1.0312
+    
+    Launching a checkpoint evaluation
+    
+      Average reward: +0.00, redundancy: 0.0%
+  
+  Running benchmark: AlphaZero
+  
+    Average reward: +0.00, redundancy: 0.0%
+  
+  Running benchmark: Network Only
+  
+    Average reward: +0.00, redundancy: 0.0%
+
+Training completed
+

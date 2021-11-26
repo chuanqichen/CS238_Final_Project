@@ -1,0 +1,73 @@
+{
+         "perfs_self_play": {
+                                    "time": 2.151657104,
+                                 "gc_time": 0.043316741,
+                               "allocated": 325612508
+                            },
+   "perfs_memory_analysis": {
+                                    "time": 5.22e-7,
+                                 "gc_time": 0,
+                               "allocated": 0
+                            },
+          "perfs_learning": {
+                                    "time": 4.121759832,
+                                 "gc_time": 0.489088381,
+                               "allocated": 499589450
+                            },
+               "self_play": {
+                                        "samples_gen_speed": 54.28232072160343,
+                                              "memory_size": 108,
+                                "average_exploration_depth": 0.6759259259259259,
+                               "memory_num_distinct_boards": 108,
+                                    "mcts_memory_footprint": 59920
+                            },
+                  "memory": null,
+                "learning": {
+                                  "checkpoints": [
+                                                   {
+                                                          "batch_id": 0,
+                                                        "evaluation": {
+                                                                                     "avgr": 0,
+                                                                         "baseline_rewards": [
+                                                                                               0
+                                                                                             ],
+                                                                                     "time": 0.32724174699999997,
+                                                                               "redundancy": 0,
+                                                                                  "rewards": [
+                                                                                               0
+                                                                                             ],
+                                                                                   "legend": "Most recent NN versus best NN so far"
+                                                                      },
+                                                       "nn_replaced": false,
+                                                      "status_after": {
+                                                                            "Hp": 0.250303,
+                                                                         "Hpnet": 0.9992837,
+                                                                          "loss": {
+                                                                                     "Lreg": 0.16434263,
+                                                                                     "Linv": 0.10029119,
+                                                                                       "Lv": 0.2786689,
+                                                                                        "L": 1.9154506,
+                                                                                       "Lp": 1.3721479
+                                                                                  }
+                                                                      }
+                                                   }
+                                                 ],
+                                    "time_loss": 0.06531262,
+                                 "time_convert": 0.943661163,
+                                       "losses": [],
+                               "initial_status": {
+                                                       "Hp": 0.250303,
+                                                    "Hpnet": 0.9992837,
+                                                     "loss": {
+                                                                "Lreg": 0.16434263,
+                                                                "Linv": 0.10029119,
+                                                                  "Lv": 0.2786689,
+                                                                   "L": 1.9154506,
+                                                                  "Lp": 1.3721479
+                                                             }
+                                                 },
+                                    "time_eval": 0.32724174699999997,
+                                  "nn_replaced": false,
+                                   "time_train": 0.4503291
+                            }
+}

@@ -5,8 +5,8 @@ include("game.jl")
 Network = NetLib.SimpleNet
 
 netparams = NetLib.SimpleNetHP(
-  width=200,
-  depth_common=6,
+  width=40,
+  depth_common=3,
   use_batch_norm=true,
   batch_norm_momentum=1.)
 
@@ -91,4 +91,4 @@ experiment = Experiment(
         "2048", GameSpec(), params, Network, netparams, benchmark)
 
 #AlphaZero.Scripts.dummy_run(experiment)
-AlphaZero.Scripts.test_grad_updates(experiment)
+AlphaZero.Scripts.train(experiment)
