@@ -2,6 +2,10 @@ using Parameters
 using Game2048: bitboard_to_array, Dirs
 include("game.jl")
 
+"""
+Vanilla MCTS without any neural network. Search mcts(s) returns best action
+via Q-values. 
+"""
 @with_kw mutable struct MonteCarloTreeSearch
     env # problem
     N # visit counts
@@ -9,7 +13,7 @@ include("game.jl")
     d # depth
     m # number of simulations
     c # exploration constant
-    # π::Function # tree policy. Options: UCB, UCB+NN, 
+    # π::Function # tree policy. Options: UCB exploration, policy
     U::Function # value estimate. Options: random rollout, greedy rollout, or critic
 end
 
@@ -19,7 +23,7 @@ function (π::MonteCarloTreeSearch)(s)
     for _ in 1:π.m
         env_copy = rli.clone(env)
         π.env = env_copy
-        simulate!(π, s, env_copy.curr_step, env_copy.max_step)
+        search!(π, s, env_copy.curr_step, env_copy.max_step)
     end
     π.env = env
     possible_actions = valid_actions(s)
@@ -30,7 +34,7 @@ function (π::MonteCarloTreeSearch)(s)
     return best_action
 end
 
-function simulate!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
+function search!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     @unpack env, N, Q, c = π
     @unpack goal, γ = env
     if d ≤ 0
@@ -51,7 +55,7 @@ function simulate!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     if terminated
         return r
     end
-    q = γ * simulate!(π, s′, curr_step+1, max_step, d-1)
+    q = γ * search!(π, s′, curr_step+1, max_step, d-1)
     N[(s,a)] += 1
     Q[(s,a)] += (q-Q[(s,a)])/N[(s,a)]
     return q
