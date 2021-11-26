@@ -164,6 +164,6 @@ function get_value(board)
     return sum_all
 end
 
-Game2048.move(s::Matrix, direction::Dirs) = move(array_to_bitboard(s), direction)
+#Game2048.move(s::Matrix, direction::Dirs) = move(array_to_bitboard(s), direction)
 
-# AlphaZero.Scripts.test_game(GameSpec())
+#AlphaZero.Scripts.test_game(GameSpec())

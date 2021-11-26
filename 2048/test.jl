@@ -22,7 +22,7 @@ U(s, goal, curr_step, max_step) = rollout(s, rli.actions(env), goal, curr_step, 
 # U_1(s) = simulate_weighted(s)
 d = 2
 exploration_factor = 0.9
-m = 100
+m = 1000
 println("depth: ", d)
 println("num mcts: ", m)
 
