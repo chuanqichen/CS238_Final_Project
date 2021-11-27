@@ -29,7 +29,7 @@ end
 maximum_tile_value(board::Bitboard) = 2 ^ maximum(bitboard_to_array(board))
 goal_reached(board::Bitboard, goal::Int) = (goal == maximum_tile_value(board))
 
-function terminated(s, goal::Int, curr_step::Int, max_step::Int)
+function terminated(s, goal::Int, curr_step::Int, max_step::Int)::Bool
     s = isa(s, Bitboard) ? s : array_to_bitboard(s)
     can_move = length(valid_actions(s)) > 0
     return  (goal_reached(s, goal) || curr_step >= max_step || !can_move) ? true : false
@@ -60,12 +60,30 @@ GameSpec() = CommonRLInterfaceWrapper.Spec(Env2048())
 @provide rli.player(env::Env2048) = 1 # 2048 is single-player Game2048
 @provide rli.players(env::Env2048) = [1]
 @provide rli.valid_actions(env::Env2048) = valid_actions(env.board)
-@provide function rli.valid_action_mask(env::Env2048)
-    valid_ints = rli.valid_actions(env)
-    mask = falses(length(rli.actions(env)))
-    mask[valid_ints .+ 1] .= 1
+@provide rli.valid_action_mask(env::Env2048) = valid_action_mask(env.board, length(rli.actions(env)))
+
+
+function valid_transitions(s)::Dict{Dirs, Bitboard}
+    board = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    boards = Dict()
+    for direction in instances(Dirs)
+        temp_board = move(board, direction)
+        if temp_board != board
+            boards[direction] = temp_board
+        end
+    end
+    return boards
+end
+valid_actions(s::Union{Bitboard,Matrix})::Vector{Int} = [Integer(action) for action in keys(valid_transitions(s))]
+
+
+function valid_action_mask(s, 𝒜_size)
+    valid_action_idc::Vector{Int} = valid_actions(s)
+    mask = falses(𝒜_size)
+    mask[valid_action_idc .+ 1] .= 1
     return mask
 end
+
 @provide rli.clone(env::Env2048) = deepcopy(env) 
 @provide rli.state(env::Env2048) = deepcopy(rli.observe(env)) # fully observable
 @provide function rli.setstate!(env::Env2048, new_state::Union{Bitboard, Matrix}, curr_step::Int=0)
@@ -123,18 +141,6 @@ function GI.symmetries(env::Env2048, state::Matrix)
     ]
 end
 
-function valid_transitions(s)::Dict{Dirs, Bitboard}
-    board = isa(s, Bitboard) ? s : array_to_bitboard(s)
-    boards = Dict()
-    for direction in instances(Dirs)
-        temp_board = move(board, direction)
-        if temp_board != board
-            boards[direction] = temp_board
-        end
-    end
-    return boards
-end
-valid_actions(s::Union{Bitboard,Matrix})::Vector{Int} = [Integer(action) for action in keys(valid_transitions(s))]
 
 
 weight_array = reshape(Vector(60:-4:0), (4,4))
