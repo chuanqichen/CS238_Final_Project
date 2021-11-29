@@ -1,6 +1,8 @@
 using Parameters
+using Flux; import Flux
 using Game2048: bitboard_to_array, Dirs
 using CommonRLInterface; const rli = CommonRLInterface;
+using AlphaZero; const ann = AlphaZero.Network
 include("game.jl")
 
 """
@@ -9,13 +11,12 @@ with value evaluation.
 """
 @with_kw mutable struct MonteCarloTreeSearchNN
     env # problem
-    nn # network
+    net<:ann.AbstractNetwork # network
 
-    N_sa::Dict{Tuple, Int} # visit counts for (s,a)
-    Q::Dict{Tuple, Float64} # action values
-    P # Policy distribution over actions from NN
-    Outcomes
-    Valids
+    N_sa::Dict{Tuple, Int} = Dict() # visit counts for (s,a)
+    Q::Dict{Tuple, Float64} = Dict() # action values
+    P = Dict() # Policy distribution over actions from net
+    Outcomes = Dict()
 
     d::Int # depth
     m::Int # number of simulations
@@ -46,9 +47,9 @@ function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
 end
 
 function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
-    @unpack N_sa, Q, P, Outcomes, Valid = π
+    @unpack N_sa, Q, P, Outcomes = π
     @unpack d, m, c = π
-    @unpack env, nn = π
+    @unpack env, net = π
     @unpack goal, γ = env
 
     if !haskey(Outcomes, s)
@@ -58,11 +59,12 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
         return Outcomes[s]
     end
     if d ≤ 0 # Backup on horizon depth state
-        return nothing #! insert neural network value prediction here
+        p, v = net(s)
+        return v #! insert neural network value prediction here
     end
 
     if !haskey(P, s) # Expansion on leaf node state
-        p, v = nn #! insert neural network predictions here
+        p, v = net(s) #! insert neural network predictions here
         𝒜_size = length(rli.actions(env))
         valid_mask = valid_action_mask(s, 𝒜_size)
         p .*= valid_mask

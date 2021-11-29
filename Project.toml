@@ -1,6 +1,7 @@
 [deps]
 AlphaZero = "8ed9eb0b-7496-408d-8c8b-2119aeea02cd"
 CommonRLInterface = "d842c3ba-07a1-494f-bbec-f5741b0a3e98"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Game2048 = "1518badf-864b-4d38-82d7-871a0e9c2f48"
@@ -8,3 +9,4 @@ JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 OhMyREPL = "5fb14364-9ced-5910-84b2-373655c76a03"
 POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
