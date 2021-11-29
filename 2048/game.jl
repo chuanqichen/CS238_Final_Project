@@ -1,4 +1,5 @@
 using Parameters
+using Flux
 using AlphaZero; import AlphaZero.GI
 using CommonRLInterface; const rli = CommonRLInterface;
 
@@ -11,7 +12,18 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     board::Bitboard = initbboard()
     max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
     curr_step::Int = 0
-    bb_repr::Bool = false
+    state_repr::String = "binary_vector"
+end
+
+function bitboard_to_state(state_repr::String, bitboard::Bitboard)
+    if state_repr == "bitboard"
+        return bitboard
+    elseif state_repr == "binary_vector"
+        return bitboard |> bitboard_to_array |> array_to_binary_vec
+
+    elseif state_repr == "power_matrix"
+        return bitboard_to_array(bitboard)
+    end
 end
 
 # Mandatory functions for CommonRLInterface
@@ -143,15 +155,25 @@ end
 
 
 
-weight_array = reshape(Vector(60:-4:0), (4,4))
+shift_array_64 = reshape(Vector(60:-4:0), (4,4))
 function array_to_bitboard(state)
     bb = UInt64(0)
     state′ = transpose(state)
     for i in eachindex(state')
-        bb_component = UInt(state'[i]) << weight_array[i]
+        bb_component = UInt(state'[i]) << shift_array_64[i]
         bb |= bb_component
     end
     return Bitboard(bb)
+end
+
+shift_array_256 = reshape(Vector(240:-16:0), (4,4))
+function array_to_binary_vec(bm)
+    bv = BitVector(zeros(256))
+    for i in eachindex(bm')
+        bv_component = ((Flux.onehot(bm'[i], 0:255)) |> reverse |> BitVector) << shift_array_256[i]
+        bv += bv_component
+    end
+    return bv
 end
 
 function get_linear_value(board)
