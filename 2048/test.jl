@@ -12,7 +12,7 @@ goal = 2048
 env = Env2048(
     goal = goal,
     γ = γ,
-    bb_repr = false
+    bb_repr = Matrix{Int8}
     )
 println(actions(env))
 

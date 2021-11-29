@@ -12,28 +12,37 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     board::Bitboard = initbboard()
     max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
     curr_step::Int = 0
-    state_repr::String = "binary_vector"
+    state_repr = Matrix{Int8} # BitVector, Matrix{Int8}, Bitboard (not used but kept anyway)
 end
 
-function bitboard_to_state(state_repr::String, bitboard::Bitboard)
-    if state_repr == "bitboard"
+function bitboard_to_state(state_repr, bitboard::Bitboard)
+    if state_repr == Bitboard
         return bitboard
-    elseif state_repr == "binary_vector"
-        return bitboard |> bitboard_to_array |> array_to_binary_vec
+    elseif state_repr == BitVector
+        return bitboard |> bitboard_to_array |> array_to_binary_vector
+    elseif state_repr == Matrix{Int8}
+        return bitboard |> bitboard_to_array
+    end
+end
 
-    elseif state_repr == "power_matrix"
-        return bitboard_to_array(bitboard)
+function state_to_bitboard(s)::Bitboard
+    if     isa(s, Bitboard)
+        return s
+    elseif isa(s, BitVector)
+        return s |> bitvector_to_array |> array_to_bitboard
+    elseif isa(s, Matrix{Int8})
+        return s |> array_to_bitboard
     end
 end
 
 # Mandatory functions for CommonRLInterface
 rli.reset!(env::Env2048) = (env.board = initbboard())
 rli.actions(env::Env2048) = Vector(0:Dirs.size-1)
-rli.observe(env::Env2048) = env.bb_repr ? env.board : bitboard_to_array(env.board) 
+rli.observe(env::Env2048) = bitboard_to_state(env.state_repr, env.board)
 rli.terminated(env::Env2048) = terminated(env.board, env.goal, env.curr_step, env.max_step)
 function rli.act!(env::Env2048, action::Integer)
-    s′, r, terminated = transition(env.board, action, env.goal, env.curr_step, env.max_step)
-    env.board = s′
+    _, board_next, r, _ = transition(env.board, action, env.goal, env.curr_step, env.max_step)
+    env.board = board_next
     env.curr_step += 1
     return r
 end
@@ -42,13 +51,15 @@ maximum_tile_value(board::Bitboard) = 2 ^ maximum(bitboard_to_array(board))
 goal_reached(board::Bitboard, goal::Int) = (goal == maximum_tile_value(board))
 
 function terminated(s, goal::Int, curr_step::Int, max_step::Int)::Bool
-    s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    # s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    s = state_to_bitboard(s)
     can_move = length(valid_actions(s)) > 0
     return  (goal_reached(s, goal) || curr_step >= max_step || !can_move) ? true : false
 end
 
 function reward(s, goal::Int, curr_step::Int, max_step::Int)
-    s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    # s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    s = state_to_bitboard(s)
     done = terminated(s, goal, curr_step, max_step)
     r = 0.0
     if done
@@ -58,12 +69,15 @@ function reward(s, goal::Int, curr_step::Int, max_step::Int)
 end
 
 function transition(s, action::Integer, goal, curr_step::Int, max_step::Int)
-    s = isa(s, Bitboard) ? s : array_to_bitboard(s)
-    s′ = move(s, Dirs(action)) |> add_tile
+    # s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    board = state_to_bitboard(s)
+    board_next = move(s, Dirs(action)) |> add_tile
+    s′ = bitboard_to_state(typeof(s), board_next)
+
     new_step = curr_step + 1
-    done = terminated(s′, goal, new_step, max_step)
-    r = reward(s′, goal, new_step, max_step)
-    return (s′=s′, r=r, terminated=done)
+    done = terminated(board_next, goal, new_step, max_step)
+    r = reward(board_next, goal, new_step, max_step)
+    return (s′=s′, board_next = board_next,r=r, done=done)
 end
 
 # Optional Functions for GameInterface of AlphaZero.jl
@@ -76,7 +90,7 @@ GameSpec() = CommonRLInterfaceWrapper.Spec(Env2048())
 
 
 function valid_transitions(s)::Dict{Dirs, Bitboard}
-    board = isa(s, Bitboard) ? s : array_to_bitboard(s)
+    board = state_to_bitboard(s)
     boards = Dict()
     for direction in instances(Dirs)
         temp_board = move(board, direction)
@@ -86,7 +100,7 @@ function valid_transitions(s)::Dict{Dirs, Bitboard}
     end
     return boards
 end
-valid_actions(s::Union{Bitboard,Matrix})::Vector{Int} = [Integer(action) for action in keys(valid_transitions(s))]
+valid_actions(s)::Vector{Int} = [Integer(action) for action in keys(valid_transitions(s))]
 
 
 function valid_action_mask(s, 𝒜_size)
@@ -98,41 +112,22 @@ end
 
 @provide rli.clone(env::Env2048) = deepcopy(env) 
 @provide rli.state(env::Env2048) = deepcopy(rli.observe(env)) # fully observable
-@provide function rli.setstate!(env::Env2048, new_state::Union{Bitboard, Matrix}, curr_step::Int=0)
-    if !isa(new_state, Bitboard)
-        new_state = array_to_bitboard(new_state)
-    end
-    env.board = new_state
+@provide function rli.setstate!(env::Env2048, new_state, curr_step::Int=env.curr_step)
+    env.board = state_to_bitboard(new_state)
     env.curr_step = curr_step
 end
-
-GI.render(env::Env2048) = display(env.board)
-GI.vectorize_state(env::Env2048, state::Bitboard) = convert(Array{Float32},bitboard_to_array(state))
-GI.heuristic_value(::Env2048) = 0.0
-GI.action_string(env::Env2048, action) = string(Dirs(action))
-
-function GI.symmetries(env::Env2048, state::Bitboard)
-    board_rotl0 = bitboard_to_array(state)
-    board_rotl1 = board_rotl0 |> rotl90
-    board_rotl2 = board_rotl1 |> rotl90
-    board_rotl3 = board_rotl2 |> rotl90
-    board_rolt0_vflip = reverse(board_rotl0, dims=2)
-    board_rolt1_vflip = reverse(board_rotl1, dims=2)
-    board_rolt2_vflip = reverse(board_rotl2, dims=2)
-    board_rolt3_vflip = reverse(board_rotl3, dims=2)
-
-    return [
-       (board_rotl1       |> array_to_bitboard, [3,4,2,1]),
-       (board_rotl2       |> array_to_bitboard, [2,1,4,3]),
-       (board_rotl3       |> array_to_bitboard, [4,3,1,2]),
-       (board_rolt0_vflip |> array_to_bitboard, [2,1,3,4]),
-       (board_rolt1_vflip |> array_to_bitboard, [4,3,2,1]),
-       (board_rolt2_vflip |> array_to_bitboard, [1,2,4,3]),
-       (board_rolt3_vflip |> array_to_bitboard, [3,4,1,2])
-    ]
+function GI.vectorize_state(env::Env2048, state)
+    if env.state_repr == Matrix{Int8}
+        state = Matrix{Float32}(state)
+    elseif env.state_repr == BitVector
+        state = Vector{Float32}(state)
+    end
+    return state
 end
 
-function GI.symmetries(env::Env2048, state::Matrix)
+function GI.symmetries(env::Env2048, state)
+    state = isa(state, Matrix) ? state : bitvector_to_array(state)
+
     board_rotl0 = state
     board_rotl1 = board_rotl0 |> rotl90
     board_rotl2 = board_rotl1 |> rotl90
@@ -141,17 +136,64 @@ function GI.symmetries(env::Env2048, state::Matrix)
     board_rolt1_vflip = reverse(board_rotl1, dims=2)
     board_rolt2_vflip = reverse(board_rotl2, dims=2)
     board_rolt3_vflip = reverse(board_rotl3, dims=2)
-
+    
+    transform(bm) = bitboard_to_state(typeof(bm), bm |> array_to_bitboard)
     return [
-       (board_rotl1      , [3,4,2,1]),
-       (board_rotl2      , [2,1,4,3]),
-       (board_rotl3      , [4,3,1,2]),
-       (board_rolt0_vflip, [2,1,3,4]),
-       (board_rolt1_vflip, [4,3,2,1]),
-       (board_rolt2_vflip, [1,2,4,3]),
-       (board_rolt3_vflip, [3,4,1,2])
-    ]
+        (board_rotl1       |> transform, [3,4,2,1]),
+        (board_rotl2       |> transform, [2,1,4,3]),
+        (board_rotl3       |> transform, [4,3,1,2]),
+        (board_rolt0_vflip |> transform, [2,1,3,4]),
+        (board_rolt1_vflip |> transform, [4,3,2,1]),
+        (board_rolt2_vflip |> transform, [1,2,4,3]),
+        (board_rolt3_vflip |> transform, [3,4,1,2])
+     ]
 end
+
+# function GI.symmetries(env::Env2048, state::Bitboard)
+#     board_rotl0 = bitboard_to_array(state)
+#     board_rotl1 = board_rotl0 |> rotl90
+#     board_rotl2 = board_rotl1 |> rotl90
+#     board_rotl3 = board_rotl2 |> rotl90
+#     board_rolt0_vflip = reverse(board_rotl0, dims=2)
+#     board_rolt1_vflip = reverse(board_rotl1, dims=2)
+#     board_rolt2_vflip = reverse(board_rotl2, dims=2)
+#     board_rolt3_vflip = reverse(board_rotl3, dims=2)
+
+#     return [
+#        (board_rotl1       |> array_to_bitboard, [3,4,2,1]),
+#        (board_rotl2       |> array_to_bitboard, [2,1,4,3]),
+#        (board_rotl3       |> array_to_bitboard, [4,3,1,2]),
+#        (board_rolt0_vflip |> array_to_bitboard, [2,1,3,4]),
+#        (board_rolt1_vflip |> array_to_bitboard, [4,3,2,1]),
+#        (board_rolt2_vflip |> array_to_bitboard, [1,2,4,3]),
+#        (board_rolt3_vflip |> array_to_bitboard, [3,4,1,2])
+#     ]
+# end
+
+# function GI.symmetries(env::Env2048, state::Matrix)
+#     board_rotl0 = state
+#     board_rotl1 = board_rotl0 |> rotl90
+#     board_rotl2 = board_rotl1 |> rotl90
+#     board_rotl3 = board_rotl2 |> rotl90
+#     board_rolt0_vflip = reverse(board_rotl0, dims=2)
+#     board_rolt1_vflip = reverse(board_rotl1, dims=2)
+#     board_rolt2_vflip = reverse(board_rotl2, dims=2)
+#     board_rolt3_vflip = reverse(board_rotl3, dims=2)
+
+#     return [
+#        (board_rotl1      , [3,4,2,1]),
+#        (board_rotl2      , [2,1,4,3]),
+#        (board_rotl3      , [4,3,1,2]),
+#        (board_rolt0_vflip, [2,1,3,4]),
+#        (board_rolt1_vflip, [4,3,2,1]),
+#        (board_rolt2_vflip, [1,2,4,3]),
+#        (board_rolt3_vflip, [3,4,1,2])
+#     ]
+# end
+
+GI.render(env::Env2048) = display(env.board)
+GI.heuristic_value(::Env2048) = 0.0
+GI.action_string(env::Env2048, action) = string(Dirs(action))
 
 
 
@@ -167,14 +209,26 @@ function array_to_bitboard(state)
 end
 
 shift_array_256 = reshape(Vector(240:-16:0), (4,4))
-function array_to_binary_vec(bm)
+function array_to_binary_vector(bm)
     bv = BitVector(zeros(256))
     for i in eachindex(bm')
         bv_component = ((Flux.onehot(bm'[i], 0:255)) |> reverse |> BitVector) << shift_array_256[i]
-        bv += bv_component
+        bv .|= bv_component
     end
     return bv
 end
+
+function bitvector_to_array(bv)
+    bm = zeros(Int8, 4,4)
+    for i in 1:15
+        start = (i-1)*16 + 1
+        onehot_vec = bv[start:start+15]
+        power = findfirst(x->!iszero(x), reverse(onehot_vec)) - 1
+        bm'[i] = power
+    end
+    return bm
+end
+
 
 function get_linear_value(board)
     return sum(bitboard_to_array(board))
@@ -192,6 +246,6 @@ function get_value(board)
     return sum_all
 end
 
-Game2048.move(s::Matrix, direction::Dirs) = move(array_to_bitboard(s), direction)
+Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
 
-# AlphaZero.Scripts.test_game(GameSpec())
+AlphaZero.Scripts.test_game(GameSpec())
