@@ -124,6 +124,7 @@ function GI.vectorize_state(env::Env2048, state)
     return state
 end
 function symmetries(state)
+    input_type = typeof(state)
     if isa(state, Vector)
         state = BitVector(state.>0) |> bitvector_to_array
     end
@@ -137,7 +138,7 @@ function symmetries(state)
     board_rolt2_vflip = reverse(board_rotl2, dims=2)
     board_rolt3_vflip = reverse(board_rotl3, dims=2)
     
-    transform(bm) = bitboard_to_state(typeof(bm), array_to_bitboard(bm))
+    transform(bm) = bitboard_to_state(input_type, array_to_bitboard(bm))
     return [
         (board_rotl1       |> transform, [3,4,2,1]),
         (board_rotl2       |> transform, [2,1,4,3]),

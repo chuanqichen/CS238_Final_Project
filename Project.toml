@@ -1,5 +1,6 @@
 [deps]
 AlphaZero = "8ed9eb0b-7496-408d-8c8b-2119aeea02cd"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 CommonRLInterface = "d842c3ba-07a1-494f-bbec-f5741b0a3e98"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
