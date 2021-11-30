@@ -12,15 +12,15 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     board::Bitboard = initbboard()
     max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
     curr_step::Int = 0
-    state_repr = Matrix{Int8} # BitVector, Matrix{Int8}, Bitboard (not used but kept anyway)
+    state_repr = Vector # Vector, Matrix{Int8}, Bitboard (not used but kept anyway)
 end
 
 function bitboard_to_state(state_repr, bitboard::Bitboard)
     if state_repr == Bitboard
         return bitboard
-    elseif state_repr == BitVector
-        return bitboard |> bitboard_to_array |> array_to_binary_vector
-    elseif state_repr == Matrix{Int8}
+    elseif state_repr <: Vector
+        return bitboard |> bitboard_to_array |> array_to_binary_vector |> Vector{Float32}
+    elseif state_repr <: Matrix
         return bitboard |> bitboard_to_array
     end
 end
@@ -28,9 +28,9 @@ end
 function state_to_bitboard(s)::Bitboard
     if     isa(s, Bitboard)
         return s
-    elseif isa(s, BitVector)
-        return s |> bitvector_to_array |> array_to_bitboard
-    elseif isa(s, Matrix{Int8})
+    elseif isa(s, Vector)
+        return BitVector(s.>0) |> bitvector_to_array |> array_to_bitboard
+    elseif isa(s, Matrix)
         return s |> array_to_bitboard
     end
 end
@@ -117,16 +117,18 @@ end
     env.curr_step = curr_step
 end
 function GI.vectorize_state(env::Env2048, state)
-    if env.state_repr == Matrix{Int8}
+    if env.state_repr <: Matrix
         state = Matrix{Float32}(state)
-    elseif env.state_repr == BitVector
+    elseif env.state_repr <: Vector
         state = Vector{Float32}(state)
     end
     return state
 end
 
-function GI.symmetries(env::Env2048, state)
-    state = isa(state, Matrix) ? state : bitvector_to_array(state)
+function GI.symmetries(::GI.AbstractGameSpec, state)
+    if isa(state, Vector)
+        state = BitVector(state.>0) |> bitvector_to_array
+    end
 
     board_rotl0 = state
     board_rotl1 = board_rotl0 |> rotl90
@@ -137,7 +139,7 @@ function GI.symmetries(env::Env2048, state)
     board_rolt2_vflip = reverse(board_rotl2, dims=2)
     board_rolt3_vflip = reverse(board_rotl3, dims=2)
     
-    transform(bm) = bitboard_to_state(typeof(bm), bm |> array_to_bitboard)
+    transform(bm) = bitboard_to_state(typeof(bm), array_to_bitboard(bm))
     return [
         (board_rotl1       |> transform, [3,4,2,1]),
         (board_rotl2       |> transform, [2,1,4,3]),
