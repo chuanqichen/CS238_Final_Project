@@ -9,10 +9,12 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
 @with_kw mutable struct Env2048 <: AbstractEnv
     goal::Int = 2048; @assert ispow2(goal)
     γ::Float64 = 1.0
-    board::Bitboard = initbboard()
-    max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
-    curr_step::Int = 0
     state_repr = Vector # Vector, Matrix, Bitboard (not used but kept anyway)
+    max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
+
+    board::Bitboard = initbboard()
+    curr_step::Int = 0
+    TR = transition
 end
 
 function bitboard_to_state(state_repr, bitboard::Bitboard)
@@ -202,4 +204,4 @@ end
 
 Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
 
-AlphaZero.Scripts.test_game(GameSpec())
+# AlphaZero.Scripts.test_game(GameSpec())

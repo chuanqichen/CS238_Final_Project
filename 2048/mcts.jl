@@ -1,7 +1,5 @@
 using Parameters
 using Game2048: bitboard_to_array, Dirs
-include("game.jl")
-
 """
 Vanilla MCTS without any neural network. Search mcts(s) returns best action
 via Q-values. 
@@ -36,7 +34,7 @@ end
 
 function search!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     @unpack env, N, Q, c = π
-    @unpack goal, γ = env
+    @unpack goal, γ, TR = env
     if d ≤ 0
         return π.U(s, env.goal, curr_step, max_step)
     end
@@ -51,8 +49,8 @@ function search!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     end
 
     a = explore(π, s)
-    s′, r, terminated = transition(s, a, goal, curr_step, max_step) #no reward
-    if terminated
+    s′, _,  r, done = TR(s, a, goal, curr_step, max_step) #no reward
+    if done
         return r
     end
     q = γ * search!(π, s′, curr_step+1, max_step, d-1)

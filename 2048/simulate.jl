@@ -1,11 +1,11 @@
 include("game.jl")
 using Game2048: move, add_tile
 
-function rollout(s::Union{Bitboard, Matrix}, 𝒜, goal, curr_step, max_step)
-    s = isa(s, Bitboard) ? s : array_to_bitboard(s)
+function rollout(s, 𝒜, goal, curr_step, max_step)
+    s = state_to_bitboard(s)
     r = 0.0
     while !terminated(s, goal, curr_step, max_step)
-        s′, r, _ = transition(s, rand(𝒜), goal, curr_step, max_step) #no reward
+        s′, board_next, r, _ = transition(s, rand(𝒜), goal, curr_step, max_step) #no reward
         s = s′
         curr_step += 1
     end
