@@ -14,7 +14,9 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
 
     board::Bitboard = initbboard()
     curr_step::Int = 0
-    TR = transition
+    T = transition
+    R = reward
+    symmetries = symmetries
 end
 
 function bitboard_to_state(state_repr, bitboard::Bitboard)
@@ -121,8 +123,7 @@ function GI.vectorize_state(env::Env2048, state)
     end
     return state
 end
-
-function GI.symmetries(::GI.AbstractGameSpec, state)
+function symmetries(state)
     if isa(state, Vector)
         state = BitVector(state.>0) |> bitvector_to_array
     end
@@ -147,6 +148,8 @@ function GI.symmetries(::GI.AbstractGameSpec, state)
         (board_rolt3_vflip |> transform, [3,4,1,2])
      ]
 end
+
+GI.symmetries(::GI.AbstractGameSpec, state) = symmetries(state)
 
 GI.render(env::Env2048) = display(env.board)
 GI.heuristic_value(::Env2048) = 0.0
