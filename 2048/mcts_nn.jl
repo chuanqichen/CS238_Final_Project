@@ -2,7 +2,7 @@ using Parameters
 using Flux; import Flux
 using Game2048: bitboard_to_array, Dirs
 using CommonRLInterface; const rli = CommonRLInterface;
-using AlphaZero; const ann = AlphaZero.Network
+using AlphaZero; 
 include("game.jl")
 
 """
@@ -11,7 +11,7 @@ with value evaluation.
 """
 @with_kw mutable struct MonteCarloTreeSearchNN
     env # problem
-    net<:ann.AbstractNetwork # network
+    net # network
 
     N_sa::Dict{Tuple, Int} = Dict() # visit counts for (s,a)
     Q::Dict{Tuple, Float64} = Dict() # action values
@@ -26,7 +26,7 @@ end
 function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
     @unpack env, m, N_sa = π
     for _ in m
-        search!(π, s, curr_step, max_step, π.d)
+        search!(π, s, env.curr_step, env.max_step, π.d)
     end
 
     # Counts provide a good estimation of the improved policy (via UCB maximization)
@@ -40,7 +40,7 @@ function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
         return probs
     end
 
-    counts = [count ^ (1.0/temp) for count in counts]
+    counts = [count ^ (1.0/τ) for count in counts]
     denom = sum(counts)
     probs = counts ./ denom
     return probs
@@ -50,44 +50,44 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
     @unpack N_sa, Q, P, Outcomes = π
     @unpack d, m, c = π
     @unpack env, net = π
-    @unpack goal, γ = env
+    @unpack T, R, goal, γ = env
 
     if !haskey(Outcomes, s)
-        Outcomes[s] = rli.reward(s, goal, curr_step, max_step)
+        Outcomes[s] = R(s, goal, curr_step, max_step)
     end
     if Outcomes[s] != 0.0 # Backup on terminal state
         return Outcomes[s]
     end
     if d ≤ 0 # Backup on horizon depth state
-        p, v = net(s)
-        return v #! insert neural network value prediction here
+        p, v = net(s)[1]
+        return v[1] #! insert neural network value prediction here
     end
 
     if !haskey(P, s) # Expansion on leaf node state
-        p, v = net(s) #! insert neural network predictions here
-        𝒜_size = length(rli.actions(env))
-        valid_mask = valid_action_mask(s, 𝒜_size)
+        p, v = net(s)[1] #! insert neural network predictions here
+        𝒜 = rli.actions(env)
+        valid_mask = valid_action_mask(s, length(𝒜))
         p .*= valid_mask
         sum_p = sum(p)
 
         if sum_p > 0 # renormalize for distribution over valid actions
             p ./= sum_p
         else # if no valid actions, uniform distribution
-            p .= 1/𝒜_size 
+            p .= 1/length(𝒜)
         end
 
         P[s] = p
-        for a in 𝒜_size
+        for a in 𝒜
             N_sa[(s,a)] = 0
             Q[(s,a)] = 0.0
         end
 
-        return v
+        return v[1]
     end
 
     best_action = selection(s, rli.actions(env), N_sa, Q, P, c)
-    s′, r, terminated = transition(s, best_action, goal, curr_step, max_step)
-    if terminated
+    s′, _, r, done = T(s, best_action, goal, curr_step, max_step)
+    if done
         return r
     end
 
@@ -100,11 +100,11 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
 end
 
 function selection(s, 𝒜, N_sa, Q, P, c::Float64)::Int # UCT 
-    N_s = sum(N[(s,a)] for a in 𝒜)
+    N_s = sum(N_sa[(s,a)] for a in 𝒜)
     N_s = (N_s == 0) ? Inf : N_s
 
     𝒜_valid = valid_actions(s)
-    uct(s,a) = Q[(s,a)] + c * P[s][a] * sqrt(N_s) / (1 + N_sa[(s,a)])
+    uct(s,a) = Q[(s,a)] + c * P[s][a+1] * sqrt(N_s) / (1 + N_sa[(s,a)])
     best_action = argmax(Dict(
         a => uct(s,a) for a in 𝒜_valid
     ))
