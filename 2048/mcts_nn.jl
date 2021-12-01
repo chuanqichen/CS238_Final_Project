@@ -24,14 +24,14 @@ with value evaluation.
 end
 
 function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
-    @unpack env, m, N_sa = π
-    for _ in m
+    @unpack env, m = π
+    for _ in 1:m
         search!(π, s, env.curr_step, env.max_step, π.d)
     end
 
     # Counts provide a good estimation of the improved policy (via UCB maximization)
     𝒜 = rli.actions(env)
-    counts = [(haskey(N_sa, (s,a)) ? N_sa[(s,a)] : 0) for a in 𝒜]
+    counts = [(haskey(π.N_sa, (s,a)) ? π.N_sa[(s,a)] : 0) for a in 𝒜]
 
     if τ == 0 # greedy action selection
         best_action_idx = rand(finall(x->x==maximum(counts), counts))
@@ -42,29 +42,28 @@ function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
 
     counts = [count ^ (1.0/τ) for count in counts]
     denom = sum(counts)
-    probs = counts ./ denom
+    probs = (denom==0.0) ? 0.25 * ones(4) : counts ./ denom
     return probs
 end
 
 function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
-    @unpack N_sa, Q, P, Outcomes = π
     @unpack d, m, c = π
     @unpack env, net = π
     @unpack T, R, goal, γ = env
 
-    if !haskey(Outcomes, s)
-        Outcomes[s] = R(s, goal, curr_step, max_step)
+    if !haskey(π.Outcomes, s)
+        π.Outcomes[s] = R(s, goal, curr_step, max_step)
     end
-    if Outcomes[s] != 0.0 # Backup on terminal state
-        return Outcomes[s]
+    if π.Outcomes[s] != 0.0 # Backup on terminal state
+        return π.Outcomes[s]
     end
     if d ≤ 0 # Backup on horizon depth state
-        p, v = net(s)[1]
-        return v[1] #! insert neural network value prediction here
+        p, v = only(net(s))
+        return only(v) #! insert neural network value prediction here
     end
 
-    if !haskey(P, s) # Expansion on leaf node state
-        p, v = net(s)[1] #! insert neural network predictions here
+    if !haskey(π.P, s) # Expansion on leaf node state
+        p, v = only(net(s)) #! insert neural network predictions here
         𝒜 = rli.actions(env)
         valid_mask = valid_action_mask(s, length(𝒜))
         p .*= valid_mask
@@ -76,16 +75,16 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
             p .= 1/length(𝒜)
         end
 
-        P[s] = p
+        π.P[s] = p
         for a in 𝒜
-            N_sa[(s,a)] = 0
-            Q[(s,a)] = 0.0
+            π.N_sa[(s,a)] = 0
+            π.Q[(s,a)] = 0.0
         end
 
-        return v[1]
+        return only(v)
     end
 
-    best_action = selection(s, rli.actions(env), N_sa, Q, P, c)
+    best_action = selection(s, rli.actions(env), π.N_sa, π.Q, π.P, c)
     s′, _, r, done = T(s, best_action, goal, curr_step, max_step)
     if done
         return r
@@ -93,8 +92,8 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
 
     v = search!(π, s′, curr_step+1, max_step, d-1)
 
-    Q[(s,best_action)] = (N_sa[(s,best_action)] * Q[(s, best_action)] + v) / (N_sa[(s,best_action)] + 1)
-    N_sa[(s,best_action)] += 1
+    π.Q[(s,best_action)] = (π.N_sa[(s,best_action)] * π.Q[(s, best_action)] + v) / (π.N_sa[(s,best_action)] + 1)
+    π.N_sa[(s,best_action)] += 1
 
     return v
 end

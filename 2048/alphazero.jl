@@ -5,6 +5,7 @@ using DataStructures;
 using Game2048
 using AlphaZero; import AlphaZero.GI;
 using CommonRLInterface; const rli = CommonRLInterface;
+using BSON: @save
 
 include("game.jl")
 include("mcts_nn.jl")
@@ -32,23 +33,22 @@ end
 
 function play_one_episode!(trainer::AlphaZeroTrainer)
     @unpack env, mcts_nn = trainer
-    @unpack symmetries = env
 
     samples_no_reward = []
     rli.reset!(env)
-    r=0.0
+    r = 0.0 # whether game was won
     while !rli.terminated(env)
         s = rli.state(env)
         τ = 1.0
         action_probs = mcts_nn(s, τ)
         action = sample(rli.actions(env), Weights(action_probs))
         r = rli.act!(env, action)
-        append!(samples_no_reward, (s=s, p=action_probs))
+        push!(samples_no_reward, (s=s, p=action_probs))
 
         # data augmentation w/ symmetries
-        for (aug_s, perm_action_mapping) in symmetries(s)
+        for (aug_s, perm_action_mapping) in env.symmetries(s)
             perm_action_probs = action_probs[perm_action_mapping]
-            append!(samples_no_reward, (s=aug_s, p=perm_action_probs))
+            push!(samples_no_reward, (s=aug_s, p=perm_action_probs))
         end
     end
 
@@ -57,24 +57,29 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
 end
 
 function learn!(trainer::AlphaZeroTrainer)
-    @unpack env, net, opt, mcts_nn, samples_iter_history = trainer
+    @unpack env, net, opt, mcts_nn = trainer
     @unpack num_iters, num_episodes, num_sims, num_samples_iter, num_samples_iter_history = trainer
 
-    for i in 1:num_iters # Play! Policy Evaluation
+    for i in 1:num_iters 
+
+        # Play! Policy Evaluation
+        println("Policy Evaluation")
         iter_samples = CircularBuffer(num_samples_iter)
         for j in 1:num_episodes
             append!(iter_samples, play_one_episode!(trainer))
         end
-        append(samples_iter_history, iter_samples)
+        push!(trainer.samples_iter_history, iter_samples)
 
         # Train! Policy Improvement
+        println("Policy Improvement")
         training_samples = []
-        for iter_samples in samples_iter_history
+        for iter_samples in trainer.samples_iter_history
             append!(training_samples, iter_samples)
         end
         shuffle!(training_samples)
-        x = [sample.s for sample in training_samples]
-        Flux.train!(loss, params(net), [x, training_samples], opt)
+        Flux.train!(loss, params(net), training_samples, opt)
+
+        @save "iter_$i.bson" net
 
     end
 end
