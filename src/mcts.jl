@@ -34,7 +34,9 @@ end
 
 function search!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     @unpack env, N, Q, c = π
-    @unpack goal, γ, TR = env
+    #@unpack goal, γ, state_repr = env
+    @unpack T, R, goal, γ = env
+
     if d ≤ 0
         return π.U(s, env.goal, curr_step, max_step)
     end
@@ -49,7 +51,7 @@ function search!(π::MonteCarloTreeSearch, s, curr_step, max_step, d=π.d)
     end
 
     a = explore(π, s)
-    s′, _,  r, done = TR(s, a, goal, curr_step, max_step) #no reward
+    s′, _,  r, done = T(s, a, goal, curr_step, max_step) #no reward
     if done
         return r
     end
