@@ -15,29 +15,29 @@ goal = 2048
 γ = 1.0
 
 #* DEBUGGING
-# # MCTS Spec
-# d = 5
-# m = 1
-# c = 0.9
-
-# # AlphaZero Spec
-# num_iters = 3
-# num_episodes = 3
-# num_samples_iter = 1e6
-# num_samples_iter_history = 20
-
-
-#* TRAINING
 # MCTS Spec
-d = 200
-m = 5
+d = 5
+m = 1
 c = 0.9
 
 # AlphaZero Spec
-num_iters = 200
-num_episodes = 1000
+num_iters = 3
+num_episodes = 3
 num_samples_iter = 1e6
 num_samples_iter_history = 20
+
+
+#* TRAINING
+# # MCTS Spec
+# d = 200
+# m = 5
+# c = 0.9
+
+# # AlphaZero Spec
+# num_iters = 200
+# num_episodes = 1000
+# num_samples_iter = 1e6
+# num_samples_iter_history = 20
 
 #* INSTANTIATION
 

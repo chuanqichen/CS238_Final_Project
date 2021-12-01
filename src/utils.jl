@@ -1,10 +1,10 @@
 using DrWatson
 
-outputdir(args...) = projectdir("output", args...)
+outputdir(args...) = projectdir("outputs", args...)
 
 nn_weight_path(output_subdir::String, i::Int) = outputdir(output_subdir, "iter_$(lpad(i,5,"0")).bson")
 
-function save_hp(trainer::AlphaZeroTrainer, output_subdir::String)
+function save_hp(trainer, output_subdir::String)
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
     @unpack d, m, c = trainer.mcts_nn
     @unpack goal, γ, state_repr = trainer.env

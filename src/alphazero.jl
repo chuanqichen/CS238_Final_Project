@@ -63,7 +63,7 @@ function learn!(trainer::AlphaZeroTrainer)
     @unpack env, net, opt, mcts_nn = trainer
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
 
-    output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM"))
+    output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
     save_hp(trainer, output_subdir)
 
     for i in 1:num_iters
