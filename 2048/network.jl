@@ -22,11 +22,8 @@ net = Chain(
 
 loss_π(p̂, p) = -sum(p .* p̂)
 loss_v(v̂, r) = Flux.mse(v̂, r)
-function loss(state, sample)
-    p̂, v̂ = net(state)
+function loss(sample)
     s, p, r = sample
-    return loss_π(p̂, p) + loss_v(v̂, r)
+    p̂, v̂ = only(net(s))
+    return loss_π(p̂, p) + loss_v(v̂, [r])
 end
-
-
-

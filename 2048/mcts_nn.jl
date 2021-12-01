@@ -59,11 +59,11 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
     end
     if d ≤ 0 # Backup on horizon depth state
         p, v = only(net(s))
-        return only(v) #! insert neural network value prediction here
+        return only(v)
     end
 
     if !haskey(π.P, s) # Expansion on leaf node state
-        p, v = only(net(s)) #! insert neural network predictions here
+        p, v = only(net(s))
         𝒜 = rli.actions(env)
         valid_mask = valid_action_mask(s, length(𝒜))
         p .*= valid_mask
