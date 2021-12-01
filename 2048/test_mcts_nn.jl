@@ -14,12 +14,13 @@ goal = 2048
 env = Env2048(
     goal = goal,
     γ = γ,
+    state_repr = Vector
     )
 
 # Network Spec
 
-d = 2
-m = 100
+d = 3
+m = 3
 c = 0.9
 
 
