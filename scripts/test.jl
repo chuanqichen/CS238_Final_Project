@@ -1,10 +1,12 @@
+using DrWatson
+@quickactivate
 using Parameters
 using CommonRLInterface; const rli = CommonRLInterface;
 
 using Game2048: move, initbboard, Dirs
-include("game.jl")
-include("mcts.jl")
-include("simulate.jl")
+include("../src/game.jl")
+include("../src/mcts.jl")
+include("../src/simulate.jl")
 
 # Environment Spec
 goal = 2048
