@@ -18,15 +18,26 @@ env = Env2048(
     )
 
 # MCTS Spec
-d = 200
-m = 10
+d = 5
+m = 1
 c = 0.9
 
 # AlphaZero Spec
-num_iters = 1000
-num_episodes = 5000
+num_iters = 3
+num_episodes = 3
 num_samples_iter = 1e6
 num_samples_iter_history = 20
+
+# # MCTS Spec
+# d = 200
+# m = 10
+# c = 0.9
+
+# # AlphaZero Spec
+# num_iters = 1000
+# num_episodes = 5000
+# num_samples_iter = 1e6
+# num_samples_iter_history = 20
 
 mcts_nn = MonteCarloTreeSearchNN(
     env = env, 
