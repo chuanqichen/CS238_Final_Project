@@ -51,6 +51,8 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
     @unpack env, net = π
     @unpack T, R, goal, γ = env
 
+    net = net |> cpu
+
     if !haskey(π.Outcomes, s)
         π.Outcomes[s] = R(s, goal, curr_step, max_step)
     end

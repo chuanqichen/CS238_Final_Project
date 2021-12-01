@@ -22,7 +22,7 @@ c = 0.9
 
 # AlphaZero Spec
 num_iters = 3
-num_episodes = 3
+num_episodes = 2
 num_samples_iter = 1e6
 num_samples_iter_history = 20
 
@@ -35,9 +35,9 @@ num_samples_iter_history = 20
 
 # # AlphaZero Spec
 # num_iters = 200
-# num_episodes = 1000
+# num_episodes = 100
 # num_samples_iter = 1e6
-# num_samples_iter_history = 20
+# num_samples_iter_history = 5
 
 #* INSTANTIATION
 
