@@ -17,11 +17,16 @@ env = Env2048(
     state_repr = Vector
     )
 
-# Network Spec
-
-d = 3
-m = 3
+# MCTS Spec
+d = 200
+m = 10
 c = 0.9
+
+# AlphaZero Spec
+num_iters = 1000
+num_episodes = 5000
+num_samples_iter = 1e6
+num_samples_iter_history = 20
 
 mcts_nn = MonteCarloTreeSearchNN(
     env = env, 
@@ -35,6 +40,10 @@ trainer = AlphaZeroTrainer(
     env = env,
     mcts_nn = mcts_nn,
     net = net,
+    num_iters = num_iters,
+    num_episodes = num_episodes,
+    num_samples_iter = num_samples_iter,
+    num_samples_iter_history = num_samples_iter_history
 )
 
 learn!(trainer)

@@ -40,7 +40,10 @@ function state_to_bitboard(s)::Bitboard
 end
 
 # Mandatory functions for CommonRLInterface
-rli.reset!(env::Env2048) = (env.board = initbboard())
+function rli.reset!(env::Env2048)
+    env.board = initbboard()
+    env.curr_step = 0
+end
 rli.actions(env::Env2048) = Vector(0:Dirs.size-1)
 rli.observe(env::Env2048) = bitboard_to_state(env.state_repr, env.board)
 rli.terminated(env::Env2048) = terminated(env.board, env.goal, env.curr_step, env.max_step)

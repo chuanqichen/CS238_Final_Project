@@ -1,16 +1,16 @@
 using Flux
-# Custom function for multiple heads
+# Custom function for network with multiple heads (policy and value function)
 struct Split{T}
     paths::T
   end
-  
+
 Split(paths...) = Split(paths)
 
 Flux.@functor Split
 
 (m::Split)(x::AbstractArray) = tuple(map(f -> f(x), m.paths))
 
-
+# Network
 net = Chain(
     Dense(256, 300, relu),
     Dense(300, 150, relu),
@@ -20,6 +20,7 @@ net = Chain(
     )
 )
 
+# Loss function
 loss_π(p̂, p) = -sum(p .* p̂)
 loss_v(v̂, r) = Flux.mse(v̂, r)
 function loss(sample)
