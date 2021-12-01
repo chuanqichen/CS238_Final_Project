@@ -1,7 +1,9 @@
 using Random
+using Dates
 using Parameters
 using StatsBase
 using DataStructures;
+using ProgressMeter
 using Game2048
 using AlphaZero; import AlphaZero.GI;
 using CommonRLInterface; const rli = CommonRLInterface;
@@ -21,11 +23,10 @@ Trains the neural network to predict both action distribution for policy and val
     net
     opt = ADAM(3e-4)
 
-    num_sims::Integer = 1 # num of MCTS simulations to run on a state to produce one decision
     num_iters::Integer = 1 # num of Generalized Policy Iteration (GPI) loops
     num_episodes::Integer = 1 # num of games to play per GPI Iteration
     num_samples_iter::Integer = 1e6 # number of samples to train the network per GPI iteration
-    num_samples_iter_history::Integer = 20 # number of iterations to keep in case we need to train offline
+    num_samples_iter_history::Integer = 20 # number of GPI of samples to keep: for staleness control + offline saving
 
     samples_iter_history = CircularBuffer(num_samples_iter_history) # stores training data generatd from play!
 
@@ -58,11 +59,11 @@ end
 
 function learn!(trainer::AlphaZeroTrainer)
     @unpack env, net, opt, mcts_nn = trainer
-    @unpack num_iters, num_episodes, num_sims, num_samples_iter, num_samples_iter_history = trainer
+    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
 
-    for i in 1:num_iters 
-
-        # Play! Policy Evaluation
+    save_path = "$(pwd())/outputs/$(Dates.format(now(), "Y-mm-dd-HH-MM"))"
+    for i in 1:num_iters
+        println("GPI Iteration $i")
         println("Policy Evaluation")
         iter_samples = CircularBuffer(num_samples_iter)
         for j in 1:num_episodes
@@ -70,7 +71,6 @@ function learn!(trainer::AlphaZeroTrainer)
         end
         push!(trainer.samples_iter_history, iter_samples)
 
-        # Train! Policy Improvement
         println("Policy Improvement")
         training_samples = []
         for iter_samples in trainer.samples_iter_history
@@ -79,7 +79,10 @@ function learn!(trainer::AlphaZeroTrainer)
         shuffle!(training_samples)
         Flux.train!(loss, params(net), training_samples, opt)
 
-        @save "iter_$i.bson" net
+        if i % 1 == 0
+            # @save "$(save_path)/iter_$i.bson" net
+            @save "iter_$i.bson" net
+        end
 
     end
 end
