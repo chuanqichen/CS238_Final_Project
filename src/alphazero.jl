@@ -1,5 +1,6 @@
 using Random
 using Dates
+using DrWatson
 using Parameters
 using StatsBase
 using DataStructures;
@@ -12,6 +13,7 @@ using BSON: @save
 include("game.jl")
 include("mcts_nn.jl")
 include("network.jl")
+include("utils.jl")
 
 """
 AlphaZero trainer that uses MCTS_NN as a policy improvement operator. 
@@ -61,7 +63,9 @@ function learn!(trainer::AlphaZeroTrainer)
     @unpack env, net, opt, mcts_nn = trainer
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
 
-    save_path = "$(pwd())/outputs/$(Dates.format(now(), "Y-mm-dd-HH-MM"))"
+    output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM"))
+    save_hp(trainer, output_subdir)
+
     for i in 1:num_iters
         println("GPI Iteration $i")
         println("Policy Evaluation")
@@ -80,9 +84,7 @@ function learn!(trainer::AlphaZeroTrainer)
         Flux.train!(loss, params(net), training_samples, opt)
 
         if i % 1 == 0
-            # @save "$(save_path)/iter_$i.bson" net
-            @save "iter_$i.bson" net
+            @save nn_weight_path(output_subdir, i) net
         end
-
     end
 end
