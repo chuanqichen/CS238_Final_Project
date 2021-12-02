@@ -75,7 +75,7 @@ function learn!(trainer::AlphaZeroTrainer)
     best_tile = 0
     best_score = 0
     @showprogress for i in 1:num_iters
-        println("GPI Iteration $i")
+        println("\nGPI Iteration $i")
         println("Policy Evaluation")
         iter_samples = CircularBuffer(num_samples_iter)
         for j in 1:num_episodes
@@ -98,18 +98,14 @@ function learn!(trainer::AlphaZeroTrainer)
         samples_p = samples_p |> device
         samples_r = samples_r |> device
         
-        # data = [(samples_s, samples_p, samples_r)]
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
         Flux.@epochs 2 Flux.train!(loss, params(net), dl, opt) 
  
-        if i % 1 == 0
-            @save nn_weight_path(output_subdir, i) net
-    
-            score, tile = play(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
-            best_tile, best_score, bested = compare_score(best_score, best_tile, score, tile)
-            if bested
-                @save nn_best_weight_path(output_subdir, i) net
-            end
-        end
+        # Compare model and save best one
+        score, tile = play(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
+        best_tile, best_score, bested = compare_score(best_score, best_tile, score, tile)
+
+        bested ? (@save nn_best_weight_path(output_subdir, i) net) : nothing
+        (i % 2 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
     end
 end
