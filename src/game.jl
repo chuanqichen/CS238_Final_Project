@@ -193,21 +193,8 @@ function bitvector_to_array(bv)
 end
 
 
-function get_linear_value(board)
-    return sum(bitboard_to_array(board))
-end
+get_value(board::Bitboard) = sum(2^power for power in bitboard_to_array(board))
 
-function get_value(board)
-    arr = bitboard_to_array(board)
-
-    sum_all = 0
-    for i in 1:size(arr, 1)
-        for j in 1:size(arr, 2)
-            sum_all += 2^arr[i, j]
-        end
-    end
-    return sum_all
-end
 
 Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
 

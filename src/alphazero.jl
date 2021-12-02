@@ -96,11 +96,11 @@ function learn!(trainer::AlphaZeroTrainer)
         samples_p = samples_p |> device
         samples_r = samples_r |> device
         
-        data = [(samples_s, samples_p, samples_r)]
-        # data = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
-        Flux.@epochs 2 Flux.train!(loss, params(net), data, opt) 
+        # data = [(samples_s, samples_p, samples_r)]
+        dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
+        Flux.@epochs 2 Flux.train!(loss, params(net), dl, opt) 
  
-        if i % 1 == 0
+        if i % 5 == 0
             @save nn_weight_path(output_subdir, i) net
         end
     end
