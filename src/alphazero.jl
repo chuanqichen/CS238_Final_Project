@@ -3,7 +3,8 @@ using Dates
 using DrWatson
 using Parameters
 using StatsBase
-using DataStructures;
+using DataStructures
+using Flux
 using ProgressMeter
 using Game2048
 using AlphaZero; import AlphaZero.GI;
@@ -44,7 +45,7 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
     while !rli.terminated(env)
         s = rli.state(env)
         τ = 1.0
-        action_probs = mcts_nn(s, τ)
+        action_probs = mcts_nn(s, τ=τ)
         action = sample(rli.actions(env), Weights(action_probs))
         r = rli.act!(env, action)
         push!(samples_no_reward, (s=s, p=action_probs))
@@ -56,7 +57,11 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
         end
     end
 
-    samples = [(s=x.s, p=x.p, r=[r]) for x in samples_no_reward]
+    samples = [( 
+        s = convert(Vector{Float16}, x.s),
+        p = convert(Vector{Float16}, x.p),
+        r = convert(Vector{Float16}, [r])
+     ) for x in samples_no_reward]
     return samples
 end
 
@@ -87,12 +92,13 @@ function learn!(trainer::AlphaZeroTrainer)
         samples_p = Flux.stack([sample.p for sample in training_samples],1) |> permutedims
         samples_r = Flux.stack([sample.r for sample in training_samples],1) |> permutedims
 
-        samples_s = samples_s |> gpu
-        samples_p = samples_p |> gpu
-        samples_r = samples_r |> gpu
+        samples_s = samples_s |> device
+        samples_p = samples_p |> device
+        samples_r = samples_r |> device
         
         data = [(samples_s, samples_p, samples_r)]
-        Flux.train!(loss, params(net), data, opt) 
+        # data = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
+        Flux.@epochs 2 Flux.train!(loss, params(net), data, opt) 
  
         if i % 1 == 0
             @save nn_weight_path(output_subdir, i) net

@@ -1,4 +1,6 @@
 using Flux
+include("utils.jl")
+
 # Custom function for network with multiple heads (policy and value function)
 struct Split{T}
     paths::T
@@ -18,7 +20,7 @@ net = Chain(
         Chain(Dense(150, 4), logsoftmax),  # policy head
         Dense(150, 1, σ) # Value head
     )
-) |> gpu
+) |> device
 
 # Loss function
 loss_π(p̂, p) = -sum(p .* p̂)
