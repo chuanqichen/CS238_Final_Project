@@ -1,7 +1,7 @@
 using DrWatson
 using Flux
 
-device = gpu
+device = cpu
 
 outputdir(args...) = projectdir("outputs", args...)
 

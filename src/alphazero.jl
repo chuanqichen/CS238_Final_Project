@@ -100,7 +100,7 @@ function learn!(trainer::AlphaZeroTrainer)
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
         Flux.@epochs 2 Flux.train!(loss, params(net), dl, opt) 
  
-        if i % 5 == 0
+        if i % 10 == 0
             @save nn_weight_path(output_subdir, i) net
         end
     end

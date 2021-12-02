@@ -34,7 +34,7 @@ function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
     counts = [(haskey(π.N_sa, (s,a)) ? π.N_sa[(s,a)] : 0) for a in 𝒜]
 
     if τ == 0 # greedy action selection
-        best_action_idx = rand(findall(x->x==maximum(counts), counts))
+        best_action_idx::Int = rand(findall(x->x==maximum(counts), counts))
         probs = zeros(length(𝒜))
         probs[best_action_idx] = 1.0
         return probs
@@ -46,8 +46,7 @@ function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
     return probs
 end
 
-function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
-    @unpack d, m, c = π
+function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d::Int)
     @unpack env, net = π
     @unpack T, R, goal, γ = env
 
@@ -86,7 +85,7 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step, max_step, d)
         return only(v)
     end
 
-    best_action = selection(s, rli.actions(env), π.N_sa, π.Q, π.P, c)
+    best_action = selection(s, rli.actions(env), π.N_sa, π.Q, π.P, π.c)
     s′, _, r, done = T(s, best_action, goal, curr_step, max_step)
     if done
         return r
