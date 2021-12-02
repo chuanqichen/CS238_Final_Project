@@ -6,6 +6,8 @@ device = cpu
 outputdir(args...) = projectdir("outputs", args...)
 
 nn_weight_path(output_subdir::String, i::Int) = outputdir(output_subdir, "iter_$(lpad(i,5,"0")).bson")
+nn_best_weight_path(output_subdir::String, i::Int) = outputdir(output_subdir, "best_iter_$(lpad(i,5,"0")).bson")
+
 
 function save_hp(trainer, output_subdir::String)
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer

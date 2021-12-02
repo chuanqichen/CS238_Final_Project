@@ -1,4 +1,5 @@
 using Parameters
+using StatsBase
 using Flux
 using AlphaZero; import AlphaZero.GI
 using CommonRLInterface; const rli = CommonRLInterface;
@@ -197,5 +198,39 @@ get_value(board::Bitboard) = sum(2^power for power in bitboard_to_array(board))
 
 
 Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
+
+
+function play(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = false)
+    rli.reset!(env)
+    while !rli.terminated(env)
+        curr_board = rli.state(env)
+        valid_actions = rli.valid_actions(env)
+        action_probs = mcts_nn(curr_board, τ = τ)
+        action_to_take = sample(rli.actions(env), Weights(action_probs))
+        if verbose
+            println("\n $valid_actions -> $action_to_take")
+            display(env.board); 
+        end
+        rli.act!(env, action_to_take)
+    end
+    return (tile = maximum_tile_value(env.board), score = get_value(env.board))
+end
+
+function compare_score(best_score, best_tile, score, tile)
+    old_score = best_score
+    old_tile = best_tile
+
+    if tile > best_tile
+        best_score = score
+        best_tile = tile
+    elseif tile == best_tile
+        if score > best_score
+            best_score = score
+        end
+    end
+    bested = (best_score != old_score || best_tile != old_tile) ? true : false
+
+    return best_tile, best_score, bested
+end
 
 # AlphaZero.Scripts.test_game(GameSpec())
