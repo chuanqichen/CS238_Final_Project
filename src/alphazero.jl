@@ -27,6 +27,8 @@ Trains the neural network to predict both action distribution for policy and val
     net
     opt = ADAM(3e-4)
 
+    num_epochs::Int = 1
+
     num_iters::Integer = 1 # num of Generalized Policy Iteration (GPI) loops
     num_episodes::Integer = 1 # num of games to play per GPI Iteration
     num_samples_iter::Integer = 1e6 # number of samples to train the network per GPI iteration
@@ -66,7 +68,7 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
 end
 
 function learn!(trainer::AlphaZeroTrainer)
-    @unpack env, net, opt, mcts_nn = trainer
+    @unpack env, net, opt, mcts_nn, num_epochs = trainer
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
 
     output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
@@ -90,16 +92,16 @@ function learn!(trainer::AlphaZeroTrainer)
         end
         shuffle!(training_samples)
 
-        samples_s = Flux.stack([sample.s for sample in training_samples],1) |> permutedims
-        samples_p = Flux.stack([sample.p for sample in training_samples],1) |> permutedims
-        samples_r = Flux.stack([sample.r for sample in training_samples],1) |> permutedims
+        samples_s = Flux.batch([sample.s for sample in training_samples])
+        samples_p = Flux.batch([sample.p for sample in training_samples])
+        samples_r = Flux.batch([sample.r for sample in training_samples])
 
         samples_s = samples_s |> device
         samples_p = samples_p |> device
         samples_r = samples_r |> device
         
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
-        Flux.@epochs 2 Flux.train!(loss, params(net), dl, opt) 
+        Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
  
         # Compare model and save best one
         score, tile = play(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
