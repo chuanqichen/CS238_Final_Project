@@ -23,7 +23,7 @@ with value evaluation.
     c::Float64 # exploration constant
 end
 
-function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
+function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
     @unpack env, m = π
     for _ in 1:m
         search!(π, s, env.curr_step, env.max_step, π.d)
@@ -34,9 +34,9 @@ function (π::MonteCarloTreeSearchNN)(s, τ::Float64 = 1.0)::Vector{Float64}
     counts = [(haskey(π.N_sa, (s,a)) ? π.N_sa[(s,a)] : 0) for a in 𝒜]
 
     if τ == 0 # greedy action selection
-        best_action_idx = rand(finall(x->x==maximum(counts), counts))
+        best_action_idx = rand(findall(x->x==maximum(counts), counts))
         probs = zeros(length(𝒜))
-        probs[best_action_idx] .= 1
+        probs[best_action_idx] = 1.0
         return probs
     end
 
