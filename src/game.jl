@@ -220,7 +220,7 @@ function play_n_games(env, mcts_nn, n::Int; τ::Float64 = 0.0, verbose::Bool = f
     tiles = zeros(n)
     scores = zeros(n)
     for i in 1:n
-        tiles[i], scores[i] = play(deepcopy(env), deepcopy(mcts_nn), τ = τ, verbose = verbose)
+        tiles[i], scores[i] = play_game(deepcopy(env), deepcopy(mcts_nn), τ = τ, verbose = verbose)
     end
     return tiles, scores
 end
@@ -233,7 +233,7 @@ function compare_scores(best_tiles, best_score, tiles::Vector, scores::Vector)
         best_tile, best_score, bested = compare_score(best_tile, best_score, tiles[i], scores[i])
         bested_record[i] = bested
     end
-    bested = (sum(bested_record) > round(n/2, RoundUp)) ? true : false
+    bested = (sum(bested_record) > round(n/2, RoundDown)) ? true : false
 
     return best_tile, best_score, bested
 end
