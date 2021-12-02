@@ -200,7 +200,7 @@ get_value(board::Bitboard) = sum(2^power for power in bitboard_to_array(board))
 Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
 
 
-function play(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = false)
+function play_game(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = false)
     rli.reset!(env)
     while !rli.terminated(env)
         curr_board = rli.state(env)
@@ -213,10 +213,32 @@ function play(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = false)
         end
         rli.act!(env, action_to_take)
     end
-    return (tile = maximum_tile_value(env.board), score = get_value(env.board))
+    return maximum_tile_value(env.board), get_value(env.board)
 end
 
-function compare_score(best_score, best_tile, score, tile)
+function play_n_games(env, mcts_nn, n::Int; τ::Float64 = 0.0, verbose::Bool = false)
+    tiles = zeros(n)
+    scores = zeros(n)
+    for i in 1:n
+        tiles[i], scores[i] = play(deepcopy(env), deepcopy(mcts_nn), τ = τ, verbose = verbose)
+    end
+    return tiles, scores
+end
+
+function compare_scores(best_tiles, best_score, tiles::Vector, scores::Vector)
+    n = length(tiles)
+    bested_record = falses(n)
+    best_tile, best_score, bested = 0, 0, false
+    for i in 1:n
+        best_tile, best_score, bested = compare_score(best_tile, best_score, tiles[i], scores[i])
+        bested_record[i] = bested
+    end
+    bested = (sum(bested_record) > round(n/2, RoundUp)) ? true : false
+
+    return best_tile, best_score, bested
+end
+
+function compare_score(best_tile, best_score, tile::Number, score::Number)
     old_score = best_score
     old_tile = best_tile
 

@@ -7,7 +7,7 @@ using DataStructures
 using Flux
 using ProgressMeter
 using Game2048
-using AlphaZero; import AlphaZero.GI;
+# using AlphaZero; import AlphaZero.GI;
 using CommonRLInterface; const rli = CommonRLInterface;
 using BSON: @save
 using CUDA
@@ -74,8 +74,7 @@ function learn!(trainer::AlphaZeroTrainer)
     output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
     save_hp(trainer, output_subdir)
 
-    best_tile = 0
-    best_score = 0
+    best_tile, best_score = 0, 0
     @showprogress for i in 1:num_iters
         println("\nGPI Iteration $i")
         println("Policy Evaluation")
@@ -104,10 +103,10 @@ function learn!(trainer::AlphaZeroTrainer)
         Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
  
         # Compare model and save best one
-        score, tile = play(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
-        best_tile, best_score, bested = compare_score(best_score, best_tile, score, tile)
+        tile, score = play_game(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
+        best_tile, best_score, bested = compare_score(best_tile, best_score, tile, score)
 
         bested ? (@save nn_best_weight_path(output_subdir, i) net) : nothing
-        (i % 2 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
+        (i % 10 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
     end
 end
