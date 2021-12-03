@@ -91,12 +91,11 @@ function learn!(trainer::AlphaZeroTrainer)
         for iter_samples in trainer.samples_iter_history
             append!(training_samples, iter_samples)
         end
-        shuffle!(training_samples)
 
         samples_s = Flux.batch([sample.s for sample in training_samples]) |> device
         samples_p = Flux.batch([sample.p for sample in training_samples]) |> device
         samples_r = Flux.batch([sample.r for sample in training_samples]) |> device
-        dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
+        dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32, shuffle=true)
 
         trainmode!(net)
         Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
