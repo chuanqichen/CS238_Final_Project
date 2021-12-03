@@ -10,7 +10,7 @@ nn_best_weight_path(output_subdir::String, i::Int) = outputdir(output_subdir, "b
 
 
 function save_hp(trainer, output_subdir::String)
-    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history, num_epochs = trainer
+    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history, num_epochs, num_step_until_greedy = trainer
     @unpack d, m, c = trainer.mcts_nn
     @unpack goal, γ, state_repr = trainer.env
 
@@ -20,6 +20,7 @@ function save_hp(trainer, output_subdir::String)
     out["num_samples_iter"] = num_samples_iter
     out["num_samples_iter_history"] = num_samples_iter_history
     out["num_epochs"] = num_epochs
+    out["num_step_until_greedy"] = num_step_until_greedy
 
     out["d"] = d
     out["m"] = m

@@ -7,7 +7,6 @@ using DataStructures
 using Flux
 using ProgressMeter
 using Game2048
-# using AlphaZero; import AlphaZero.GI;
 using CommonRLInterface; const rli = CommonRLInterface;
 using BSON: @save
 using CUDA
@@ -34,6 +33,7 @@ Trains the neural network to predict both action distribution for policy and val
     num_samples_iter::Int = 1e6 # number of samples to train the network per GPI iteration
     num_samples_iter_history::Int = 20 # number of GPI of samples to keep: for staleness control + offline saving
     num_eval::Int = 1 # number of games to play after each GPI loop to test new trained mdoel & (maybe) save it
+    num_step_until_greedy::Int = 15 # first this many steps get exploratory action probability output from MCTSNN, greedy afterwards
 
     samples_iter_history = CircularBuffer(num_samples_iter_history) # stores training data generatd from play!
 
@@ -41,13 +41,14 @@ end
 
 function play_one_episode!(trainer::AlphaZeroTrainer)
     @unpack env, mcts_nn = trainer
+    @unpack num_step_until_greedy = trainer
 
     samples_no_reward = []
     rli.reset!(env)
     r = 0.0 # whether game was won
     while !rli.terminated(env)
         s = rli.state(env)
-        τ = 1.0
+        τ = Float64(env.curr_step < num_step_until_greedy)
         action_probs = mcts_nn(s, τ=τ)
         action = sample(rli.actions(env), Weights(action_probs))
         r = rli.act!(env, action)
