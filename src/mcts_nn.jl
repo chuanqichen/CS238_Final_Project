@@ -18,7 +18,7 @@ with value evaluation.
     P = Dict() # Policy distribution over actions from net
     Outcomes = Dict()
 
-    d::Int # depth
+    d::Number # depth
     m::Int # number of simulations
     c::Float64 # exploration constant
 end
@@ -42,12 +42,12 @@ function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
 
     counts = [count ^ (1.0/τ) for count in counts]
     denom = sum(counts)
-    # probs = (denom==0.0) ? 0.25 * ones(4) : counts ./ denom
+    @assert denom > 0 "sum(counts) cannot be zero after MCTS search has been performed"
     probs = counts ./ denom
     return probs
 end
 
-function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d::Int)::AbstractFloat
+function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Number, d::Number)::AbstractFloat
     @unpack env, net = π
     @unpack T, R, terminated, goal, γ = env
 

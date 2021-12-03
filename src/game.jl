@@ -11,7 +11,7 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     goal::Int = 2048; @assert ispow2(goal)
     γ::Float64 = 1.0
     state_repr = Vector # Vector, Matrix, Bitboard (not used but kept anyway)
-    max_step::Int = 1000 + max(0, log2(goal)-11) * 1000
+    max_step::Number = 1000 + max(0, log2(goal)-11) * 1000
 
     board::Bitboard = initbboard()
     curr_step::Int = 0
@@ -59,13 +59,13 @@ end
 maximum_tile_value(board::Bitboard) = 2 ^ maximum(bitboard_to_array(board))
 goal_reached(board::Bitboard, goal::Int) = (goal == maximum_tile_value(board))
 
-function terminated(s, goal::Int, curr_step::Int, max_step::Int)::Bool
+function terminated(s, goal::Int, curr_step::Int, max_step::Number)::Bool
     s = state_to_bitboard(s)
     can_move = length(valid_actions(s)) > 0
     return  (goal_reached(s, goal) || curr_step >= max_step || !can_move) ? true : false
 end
 
-function reward(s, goal::Int, curr_step::Int, max_step::Int)
+function reward(s, goal::Int, curr_step::Int, max_step::Number)
     s = state_to_bitboard(s)
     done = terminated(s, goal, curr_step, max_step)
     r = 0.0
@@ -75,7 +75,7 @@ function reward(s, goal::Int, curr_step::Int, max_step::Int)
     return r
 end
 
-function transition(s, action::Integer, goal, curr_step::Int, max_step::Int)
+function transition(s, action::Integer, goal, curr_step::Int, max_step::Number)
     board = state_to_bitboard(s)
     board_next = move(s, Dirs(action)) |> add_tile
     s′ = bitboard_to_state(typeof(s), board_next)

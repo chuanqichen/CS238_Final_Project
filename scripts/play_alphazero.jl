@@ -10,24 +10,26 @@ include("../src/mcts_nn.jl")
 include("../src/alphazero.jl")
 include("../src/network.jl")
 
-weight_fp  = "outputs/2021-12-02-21-59-36/best_iter_00006.bson"
+weight_fp  = "outputs/2021-12-03-12-29-58/iter_00010.bson"
 @load weight_fp net
 
 n = 200
 
 goal = 2048
 γ = 1.0
+max_step = Inf
 
-d = 1000
-m = 5
-c = 0.9
+d = Inf
+m = 20
+c = 2.0
 τ = 0.0 # 0 is greedy
 
 
 env = Env2048(
     goal = goal,
     γ = γ,
-    state_repr = Vector
+    state_repr = Vector,
+    max_step = max_step
     )
 
 mcts_nn = MonteCarloTreeSearchNN(
