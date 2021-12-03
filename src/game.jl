@@ -213,34 +213,43 @@ function play_game(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = fal
         end
         rli.act!(env, action_to_take)
     end
-    return maximum_tile_value(env.board), get_value(env.board)
+    return maximum_tile_value(env.board), get_value(env.board), env.board
 end
 
 function play_n_games(env, mcts_nn, n::Int; τ::Float64 = 0.0, verbose::Bool = false)
     tiles = zeros(n)
     scores = zeros(n)
+    boards = []
     for i in 1:n
-        tiles[i], scores[i] = play(deepcopy(env), deepcopy(mcts_nn), τ = τ, verbose = verbose)
+        tiles[i], scores[i], final_board = play_game(deepcopy(env), deepcopy(mcts_nn), τ = τ, verbose = verbose)
+        push!(boards, final_board)
     end
-    return tiles, scores
+    return tiles, scores, boards
 end
 
-function compare_scores(best_tiles, best_score, tiles::Vector, scores::Vector)
+function compare_scores(best_tile, best_score, tiles::Vector, scores::Vector, boards::Vector)
     n = length(tiles)
     bested_record = falses(n)
-    best_tile, best_score, bested = 0, 0, false
+    best_board::Bitboard = initbboard()
     for i in 1:n
         best_tile, best_score, bested = compare_score(best_tile, best_score, tiles[i], scores[i])
         bested_record[i] = bested
+        best_board = bested ? boards[i] : best_board
     end
-    bested = (sum(bested_record) > round(n/2, RoundUp)) ? true : false
+    bested = (sum(bested_record) > round(n/2, RoundDown)) ? true : false
 
-    return best_tile, best_score, bested
+    return best_tile, best_score, best_board, bested
 end
 
+# function compare_scores(best_tile, best_score, tiles::Vector, scores::Vector)
+#     bested_idc = findall((tile, score) -> bested(best_tile, best_score, tile, score), zip(tiles, scores))
+
+# end
+
+# bested(best_t, best_s, t, s) = compare_score(best_t, best_s, t, s)[3]
 function compare_score(best_tile, best_score, tile::Number, score::Number)
-    old_score = best_score
     old_tile = best_tile
+    old_score = best_score
 
     if tile > best_tile
         best_score = score

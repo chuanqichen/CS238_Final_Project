@@ -10,12 +10,16 @@ include("../src/mcts_nn.jl")
 include("../src/alphazero.jl")
 include("../src/network.jl")
 
-@load outputdir("2021-12-01-10-32-46/iter_00004.bson") net
+weight_fp  = "outputs/2021-12-02-21-59-36/best_iter_00006.bson"
+@load weight_fp net
+
+n = 200
 
 goal = 2048
 γ = 1.0
-d = 200
-m = 4
+
+d = 1000
+m = 5
 c = 0.9
 τ = 0.0 # 0 is greedy
 
@@ -28,25 +32,15 @@ env = Env2048(
 
 mcts_nn = MonteCarloTreeSearchNN(
     env = env, 
-    net = net,
+    net = Flux.testmode!(net),
     d = d, 
     m = m, 
     c = c, 
 )
 
-function play(env, mcts_nn, τ)
-    rli.reset!(env)
-    while !rli.terminated(env)
-        curr_board = rli.state(env)
-        valid_actions = rli.valid_actions(env)
-        action_probs = mcts_nn(curr_board, τ = τ)
-        action_to_take = sample(rli.actions(env), Weights(action_probs))
-        println("\n $valid_actions -> $action_to_take")
-        display(env.board); 
-        rli.act!(env, action_to_take)
-    end
-    println("\nScore: $(get_value(env.board))")
-    println("Maximum Tile: $(maximum_tile_value(env.board))")
-end
 
-play(env, mcts_nn, τ)
+tiles, scores, boards = play_n_games(deepcopy(env), deepcopy(mcts_nn), n,  τ=τ)
+best_tile, best_score, best_board, bested = compare_scores(0, 0, tiles, scores, boards)
+println("Best Tile:  $(best_tile)")
+println("Best Score: $(best_score)")
+display(best_board)

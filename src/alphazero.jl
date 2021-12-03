@@ -25,14 +25,15 @@ Trains the neural network to predict both action distribution for policy and val
     env
     mcts_nn::MonteCarloTreeSearchNN
     net
-    opt = ADAM(3e-4)
+    opt = ADAM(1e-3)
 
     num_epochs::Int = 1
 
-    num_iters::Integer = 1 # num of Generalized Policy Iteration (GPI) loops
-    num_episodes::Integer = 1 # num of games to play per GPI Iteration
-    num_samples_iter::Integer = 1e6 # number of samples to train the network per GPI iteration
-    num_samples_iter_history::Integer = 20 # number of GPI of samples to keep: for staleness control + offline saving
+    num_iters::Int = 1 # num of Generalized Policy Iteration (GPI) loops
+    num_episodes::Int = 1 # num of games to play per GPI Iteration
+    num_samples_iter::Int = 1e6 # number of samples to train the network per GPI iteration
+    num_samples_iter_history::Int = 20 # number of GPI of samples to keep: for staleness control + offline saving
+    num_eval::Int = 1 # number of games to play after each GPI loop to test new trained mdoel & (maybe) save it
 
     samples_iter_history = CircularBuffer(num_samples_iter_history) # stores training data generatd from play!
 
@@ -69,7 +70,7 @@ end
 
 function learn!(trainer::AlphaZeroTrainer)
     @unpack env, net, opt, mcts_nn, num_epochs = trainer
-    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history = trainer
+    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history, num_eval = trainer
 
     output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
     save_hp(trainer, output_subdir)
@@ -91,20 +92,18 @@ function learn!(trainer::AlphaZeroTrainer)
         end
         shuffle!(training_samples)
 
-        samples_s = Flux.batch([sample.s for sample in training_samples])
-        samples_p = Flux.batch([sample.p for sample in training_samples])
-        samples_r = Flux.batch([sample.r for sample in training_samples])
-
-        samples_s = samples_s |> device
-        samples_p = samples_p |> device
-        samples_r = samples_r |> device
-        
+        samples_s = Flux.batch([sample.s for sample in training_samples]) |> device
+        samples_p = Flux.batch([sample.p for sample in training_samples]) |> device
+        samples_r = Flux.batch([sample.r for sample in training_samples]) |> device
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
+
+        trainmode!(net)
         Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
+        testmode!(net)
  
         # Compare model and save best one
-        tile, score = play_game(deepcopy(env), deepcopy(mcts_nn), τ=0.0)
-        best_tile, best_score, bested = compare_score(best_tile, best_score, tile, score)
+        tiles, scores, boards = play_n_games(deepcopy(env), deepcopy(mcts_nn), num_eval, τ=0.0)
+        best_tile, best_score, _, bested = compare_scores(best_tile, best_score, tiles, scores, boards)
 
         bested ? (@save nn_best_weight_path(output_subdir, i) net) : nothing
         (i % 10 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
