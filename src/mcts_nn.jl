@@ -42,7 +42,8 @@ function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
 
     counts = [count ^ (1.0/τ) for count in counts]
     denom = sum(counts)
-    probs = (denom==0.0) ? 0.25 * ones(4) : counts ./ denom
+    # probs = (denom==0.0) ? 0.25 * ones(4) : counts ./ denom
+    probs = counts ./ denom
     return probs
 end
 
@@ -59,12 +60,12 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d
         return π.Outcomes[s]
     end
     if d ≤ 0 # Backup on horizon depth state
-        p, v = only(net(s))
+        p, v = only(net(unsqueeze_batch_maybe(s)))
         return only(v)
     end
 
     if !haskey(π.P, s) # Expansion on leaf node state
-        p, v = only(net(s))
+        p, v = only(net(unsqueeze_batch_maybe(s)))
         𝒜 = rli.actions(env)
         valid_mask = valid_action_mask(s, length(𝒜))
         p .*= valid_mask

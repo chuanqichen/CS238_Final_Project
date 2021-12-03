@@ -97,7 +97,9 @@ function learn!(trainer::AlphaZeroTrainer)
         samples_r = Flux.batch([sample.r for sample in training_samples]) |> device
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32)
 
+        trainmode!(net)
         Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
+        testmode!(net)
  
         # Compare model and save best one
         tiles, scores = play_n_games(deepcopy(env), deepcopy(mcts_nn), num_eval,  τ=0.0)
