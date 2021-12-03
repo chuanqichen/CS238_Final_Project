@@ -10,17 +10,19 @@ include("../src/mcts_nn.jl")
 include("../src/alphazero.jl")
 include("../src/network.jl")
 
-weight_fp  = "outputs/2021-12-02-14-17-24/best_iter_00051.bson" 
+weight_fp  = "outputs/2021-12-02-21-59-36/best_iter_00006.bson"
 @load weight_fp net
+
+n = 200
 
 goal = 2048
 γ = 1.0
-d = 800
-m = 10
+
+d = 1000
+m = 5
 c = 0.9
 τ = 0.0 # 0 is greedy
 
-n = 100
 
 env = Env2048(
     goal = goal,
@@ -30,19 +32,15 @@ env = Env2048(
 
 mcts_nn = MonteCarloTreeSearchNN(
     env = env, 
-    net = net,
+    net = Flux.testmode!(net),
     d = d, 
     m = m, 
     c = c, 
 )
 
-# tile, score = play_game(deepcopy(env), deepcopy(mcts_nn), τ=τ)
-# println("\nScore: $(score)")
-# println("Maximum Tile: $(tile)")
 
-tiles, scores = play_n_games(deepcopy(env), deepcopy(mcts_nn), n,  τ=τ)
-best_tile, best_score, bested = compare_scores(0, 0, tiles, scores)
-# println("\nTiles:  $([lpad(s, 6) for s in tiles])")
-# println("Scores: $([lpad(s, 6) for s in scores])")
+tiles, scores, boards = play_n_games(deepcopy(env), deepcopy(mcts_nn), n,  τ=τ)
+best_tile, best_score, best_board, bested = compare_scores(0, 0, tiles, scores, boards)
 println("Best Tile:  $(best_tile)")
 println("Best Score: $(best_score)")
+display(best_board)

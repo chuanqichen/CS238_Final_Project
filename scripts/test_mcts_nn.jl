@@ -14,30 +14,34 @@ include("../src/network.jl")
 goal = 2048
 γ = 1.0
 
-#* DEBUGGING
-# MCTS Spec
-d = 5
-m = 1
-c = 0.9
-
-# AlphaZero Spec
-num_iters = 3
-num_episodes = 2
-num_samples_iter = 1e6
-num_samples_iter_history = 20
-
-
-#* TRAINING
-# # MCTS Spec
-# d = 200
-# m = 5
+# * DEBUGGING
+# d = 4
+# m = 2
 # c = 0.9
 
-# # AlphaZero Spec
-# num_iters = 200
-# num_episodes = 100
-# num_samples_iter = 1e6
-# num_samples_iter_history = 5
+
+# num_iters = 3
+# num_episodes = 2
+# num_epochs = 1
+# num_samples_iter = 2e4
+# num_samples_iter_history = 3
+# num_evals = 1
+
+#* TRAINING
+# MCTS Spec
+d = 1000
+m = 5
+c = 4
+
+# AlphaZero Spec
+num_epochs = 10
+
+num_iters = 3000
+num_episodes = 20
+num_samples_iter = 2e4
+num_samples_iter_history = 2
+num_evals = 9
+
 
 #* INSTANTIATION
 
@@ -59,6 +63,7 @@ trainer = AlphaZeroTrainer(
     env = env,
     mcts_nn = mcts_nn,
     net = net,
+    num_epochs = num_epochs,
     num_iters = num_iters,
     num_episodes = num_episodes,
     num_samples_iter = num_samples_iter,
