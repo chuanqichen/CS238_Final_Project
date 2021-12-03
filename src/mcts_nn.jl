@@ -101,11 +101,6 @@ end
 function selection(s, 𝒜, N_sa, Q, P, c::Float64)::Int # UCT 
     N_s = sum(N_sa[(s,a)] for a in 𝒜)
     N_s = (N_s == 0) ? Inf : N_s
-
-    𝒜_valid = valid_actions(s)
     uct(s,a) = Q[(s,a)] + c * P[s][a+1] * sqrt(N_s) / (1 + N_sa[(s,a)])
-    best_action = argmax(Dict(
-        a => uct(s,a) for a in 𝒜_valid
-    ))
-    return best_action
+    return argmax(a->uct(s,a), valid_actions(s))
 end
