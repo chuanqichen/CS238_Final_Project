@@ -17,6 +17,7 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     curr_step::Int = 0
     T = transition
     R = reward
+    terminated = terminated
     symmetries = symmetries
 end
 
