@@ -47,22 +47,23 @@ function (π::MonteCarloTreeSearchNN)(s; τ::Float64 = 1.0)::Vector{Float64}
     return probs
 end
 
-function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d::Int)
+function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d::Int)::AbstractFloat
     @unpack env, net = π
-    @unpack T, R, goal, γ = env
+    @unpack T, R, terminated, goal, γ = env
 
     net = net |> cpu
 
-    if !haskey(π.Outcomes, s)
-        π.Outcomes[s] = R(s, goal, curr_step, max_step)
-    end
-    if π.Outcomes[s] != 0.0 # Backup on terminal state
-        return π.Outcomes[s]
-    end
     if d ≤ 0 # Backup on horizon depth state
         p, v = only(net(unsqueeze_batch_maybe(s)))
         return only(v)
     end
+    if !haskey(π.Outcomes, s)
+        π.Outcomes[s] = R(s, goal, curr_step, max_step)
+    end
+    if terminated(s, goal, curr_step, max_step) # Backup on terminal state
+        return π.Outcomes[s]
+    end
+
 
     if !haskey(π.P, s) # Expansion on leaf node state
         p, v = only(net(unsqueeze_batch_maybe(s)))
@@ -88,9 +89,6 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Int, d
 
     best_action = selection(s, rli.actions(env), π.N_sa, π.Q, π.P, π.c)
     s′, _, r, done = T(s, best_action, goal, curr_step, max_step)
-    if done
-        return r
-    end
 
     v = search!(π, s′, curr_step+1, max_step, d-1)
 
