@@ -25,7 +25,7 @@ Trains the neural network to predict both action distribution for policy and val
     env
     mcts_nn::MonteCarloTreeSearchNN
     net
-    opt = ADAM(3e-4)
+    opt = ADAM(1e-3)
 
     num_epochs::Int = 1
 
@@ -102,8 +102,8 @@ function learn!(trainer::AlphaZeroTrainer)
         testmode!(net)
  
         # Compare model and save best one
-        tiles, scores = play_n_games(deepcopy(env), deepcopy(mcts_nn), num_eval,  τ=0.0)
-        best_tile, best_score, bested = compare_scores(best_tile, 0, tiles, scores)
+        tiles, scores, boards = play_n_games(deepcopy(env), deepcopy(mcts_nn), num_eval, τ=0.0)
+        best_tile, best_score, _, bested = compare_scores(best_tile, best_score, tiles, scores, boards)
 
         bested ? (@save nn_best_weight_path(output_subdir, i) net) : nothing
         (i % 10 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
