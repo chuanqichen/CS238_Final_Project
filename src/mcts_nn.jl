@@ -61,7 +61,8 @@ function search!(π::MonteCarloTreeSearchNN, s, curr_step::Int, max_step::Number
         π.Outcomes[s] = R(s, goal, curr_step, max_step)
     end
     if terminated(s, goal, curr_step, max_step) # Backup on terminal state
-        return π.Outcomes[s]
+        return max(π.Outcomes[s], curr_step / max_step) # step-based reward shaping
+        # return π.Outcomes[s] # no reward shaping
     end
 
 

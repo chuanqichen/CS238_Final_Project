@@ -11,7 +11,7 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     goal::Int = 2048; @assert ispow2(goal)
     γ::Float64 = 1.0
     state_repr = Vector # Vector, Matrix, Bitboard (not used but kept anyway)
-    max_step::Number = 1000 + max(0, log2(goal)-11) * 1000
+    max_step::Int = 1000 + max(0, log2(goal)-11) * 1000 # kept as integer for step-based reward shaping
 
     board::Bitboard = initbboard()
     curr_step::Int = 0
