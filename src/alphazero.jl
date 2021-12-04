@@ -60,7 +60,7 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
             push!(samples_no_reward, (s=aug_s, p=perm_action_probs))
         end
     end
-
+    r = max(r, env.curr_step / env.max_step) # step-based reward engineering
     samples = [( 
         s = convert(Vector{Float16}, x.s),
         p = convert(Vector{Float16}, x.p),

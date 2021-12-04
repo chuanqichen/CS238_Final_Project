@@ -242,12 +242,6 @@ function compare_scores(best_tile, best_score, tiles::Vector, scores::Vector, bo
     return best_tile, best_score, best_board, bested
 end
 
-# function compare_scores(best_tile, best_score, tiles::Vector, scores::Vector)
-#     bested_idc = findall((tile, score) -> bested(best_tile, best_score, tile, score), zip(tiles, scores))
-
-# end
-
-# bested(best_t, best_s, t, s) = compare_score(best_t, best_s, t, s)[3]
 function compare_score(best_tile, best_score, tile::Number, score::Number)
     old_tile = best_tile
     old_score = best_score
