@@ -70,7 +70,7 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
 end
 
 function learn!(trainer::AlphaZeroTrainer)
-    @unpack env, net, opt, mcts_nn, num_epochs = trainer
+    @unpack env, opt, mcts_nn, num_epochs = trainer
     @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history, num_eval = trainer
 
     output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
@@ -96,15 +96,18 @@ function learn!(trainer::AlphaZeroTrainer)
         samples_p = Flux.batch([sample.p for sample in training_samples]) |> device
         samples_r = Flux.batch([sample.r for sample in training_samples]) |> device
         dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32, shuffle=true)
+        trainer.net = trainer.net |> device
 
-        trainmode!(net)
-        Flux.@epochs num_epochs Flux.train!(loss, params(net), dl, opt) 
-        testmode!(net)
+        trainmode!(trainer.net)
+        Flux.@epochs num_epochs Flux.train!(loss, params(trainer.net), dl, opt) # , cb = () -> println(loss(first(dl)...))
+        testmode!(trainer.net)
+        trainer.net = trainer.net |> cpu
  
         # Compare model and save best one
         tiles, scores, boards = play_n_games(deepcopy(env), deepcopy(mcts_nn), num_eval, τ=0.0)
         best_tile, best_score, _, bested = compare_scores(best_tile, best_score, tiles, scores, boards)
 
+        net = trainer.net
         bested ? (@save nn_best_weight_path(output_subdir, i) net) : nothing
         (i % 10 == 0) ? (@save nn_weight_path(output_subdir, i) net) : nothing
     end
