@@ -16,6 +16,12 @@ include("mcts_nn.jl")
 include("network.jl")
 include("utils.jl")
 
+struct Sample
+    s::Array{Float32}
+    p::Array{Float32, 1}
+    r::Array{Float32, 1}
+end
+
 """
 AlphaZero trainer that uses MCTS_NN as a policy improvement operator. 
 Trains the neural network to predict both action distribution for policy and value estimation for critic
@@ -34,7 +40,8 @@ Trains the neural network to predict both action distribution for policy and val
     num_eval::Int = 1 # number of games to play after each GPI loop to test new trained mdoel & (maybe) save it
     num_step_until_greedy::Int = 15 # first this many steps get exploratory action probability output from MCTSNN, greedy afterwards
 
-    samples_iter = CircularBuffer(num_samples_iter)
+    samples_iter = CircularBuffer{Sample}(num_samples_iter)
+    samples_episode = CircularBuffer{Sample}(num_samples_iter)
 
 end
 
@@ -42,7 +49,7 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
     @unpack env, mcts_nn = trainer
     @unpack num_step_until_greedy = trainer
 
-    samples_no_reward = []
+    empty!(trainer.samples_episode)
     rli.reset!(env)
     r = 0.0 # whether game was won
     while !rli.terminated(env)
@@ -51,21 +58,20 @@ function play_one_episode!(trainer::AlphaZeroTrainer)
         action_probs = mcts_nn(s, τ=τ)
         action = sample(rli.actions(env), Weights(action_probs))
         r = rli.act!(env, action)
-        push!(samples_no_reward, (s=s, p=action_probs))
 
-        # data augmentation w/ symmetries
+        # Gather experience + data augmentation w/ symmetries
+        push!(trainer.samples_episode, Sample(s, action_probs, [-Inf]))
         for (aug_s, perm_action_mapping) in env.symmetries(s)
-            perm_action_probs = action_probs[perm_action_mapping]
-            push!(samples_no_reward, (s=aug_s, p=perm_action_probs))
+            push!(trainer.samples_episode, Sample(aug_s, action_probs[perm_action_mapping], [-Inf]))
         end
     end
+
     r = max(r, env.curr_step / env.max_step) # step-based reward engineering
-    samples = [( 
-        s = convert(Vector{Float16}, x.s),
-        p = convert(Vector{Float16}, x.p),
-        r = convert(Vector{Float16}, [r])
-     ) for x in samples_no_reward]
-    return samples
+    for sample in trainer.samples_episode
+        sample.r[1] = r
+    end
+    
+    return trainer.samples_episode
 end
 
 function learn!(trainer::AlphaZeroTrainer)
