@@ -24,19 +24,17 @@ Trains the neural network to predict both action distribution for policy and val
     env
     mcts_nn::MonteCarloTreeSearchNN
     net
-    opt = ADAM(1e-3)
+    opt = Flux.Optimiser(ClipNorm(1), ADAM(1e-3))
 
     num_epochs::Int = 1
 
     num_iters::Int = 1 # num of Generalized Policy Iteration (GPI) loops
     num_episodes::Int = 1 # num of games to play per GPI Iteration
     num_samples_iter::Int = 1e6 # number of samples to train the network per GPI iteration
-    num_samples_iter_history::Int = 20 # number of GPI of samples to keep: for staleness control + offline saving
     num_eval::Int = 1 # number of games to play after each GPI loop to test new trained mdoel & (maybe) save it
     num_step_until_greedy::Int = 15 # first this many steps get exploratory action probability output from MCTSNN, greedy afterwards
 
     samples_iter = CircularBuffer(num_samples_iter)
-    samples_iter_history = CircularBuffer(num_samples_iter_history) # stores training data generatd from play!
 
 end
 
@@ -72,7 +70,7 @@ end
 
 function learn!(trainer::AlphaZeroTrainer)
     @unpack env, opt, mcts_nn, num_epochs = trainer
-    @unpack num_iters, num_episodes, num_samples_iter, num_samples_iter_history, num_eval = trainer
+    @unpack num_iters, num_episodes, num_samples_iter, num_eval = trainer
 
     output_subdir = outputdir(Dates.format(now(), "Y-mm-dd-HH-MM-SS"))
     save_hp(trainer, output_subdir)
@@ -85,18 +83,12 @@ function learn!(trainer::AlphaZeroTrainer)
         for j in 1:num_episodes
             append!(trainer.samples_iter, play_one_episode!(trainer))
         end
-        push!(trainer.samples_iter_history, trainer.samples_iter)
 
         println("Policy Improvement")
-        training_samples = []
-        for samples_iter in trainer.samples_iter_history
-            append!(training_samples, samples_iter)
-        end
-
-        samples_s = Flux.batch([sample.s for sample in training_samples]) |> device
-        samples_p = Flux.batch([sample.p for sample in training_samples]) |> device
-        samples_r = Flux.batch([sample.r for sample in training_samples]) |> device
-        dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=32, shuffle=true)
+        samples_s = Flux.batch([sample.s for sample in trainer.samples_iter]) |> device
+        samples_p = Flux.batch([sample.p for sample in trainer.samples_iter]) |> device
+        samples_r = Flux.batch([sample.r for sample in trainer.samples_iter]) |> device
+        dl = Flux.DataLoader((samples_s, samples_p, samples_r), batchsize=128, shuffle=true)
         trainer.net = trainer.net |> device
 
         trainmode!(trainer.net)

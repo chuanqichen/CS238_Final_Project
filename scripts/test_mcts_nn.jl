@@ -13,7 +13,7 @@ include("../src/network.jl")
 # Environment Spec
 goal = 2048
 γ = 1.0
-max_step = Inf
+max_step = 2e3
 
 # * DEBUGGING
 # d = 10
@@ -25,7 +25,6 @@ max_step = Inf
 # num_episodes = 1
 # num_epochs = 1
 # num_samples_iter = 2e4
-# num_samples_iter_history = 2
 # num_evals = 1
 
 #* TRAINING
@@ -35,12 +34,11 @@ m = 5
 c = 3
 
 # AlphaZero Spec
-num_epochs = 8
+num_epochs = 10
 
 num_iters = 3000
-num_episodes = 20
-num_samples_iter = 5e4
-num_samples_iter_history = 1
+num_episodes = 25
+num_samples_iter = 1e5 |> Int
 num_evals = 9
 
 
@@ -69,7 +67,6 @@ trainer = AlphaZeroTrainer(
     num_iters = num_iters,
     num_episodes = num_episodes,
     num_samples_iter = num_samples_iter,
-    num_samples_iter_history = num_samples_iter_history
 )
 
 learn!(trainer)
