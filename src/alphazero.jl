@@ -35,6 +35,7 @@ Trains the neural network to predict both action distribution for policy and val
     num_eval::Int = 1 # number of games to play after each GPI loop to test new trained mdoel & (maybe) save it
     num_step_until_greedy::Int = 15 # first this many steps get exploratory action probability output from MCTSNN, greedy afterwards
 
+    samples_iter = CircularBuffer(num_samples_iter)
     samples_iter_history = CircularBuffer(num_samples_iter_history) # stores training data generatd from play!
 
 end
@@ -80,16 +81,16 @@ function learn!(trainer::AlphaZeroTrainer)
     @showprogress for i in 1:num_iters
         println("\nGPI Iteration $i")
         println("Policy Evaluation")
-        iter_samples = CircularBuffer(num_samples_iter)
+        empty!(trainer.samples_iter)
         for j in 1:num_episodes
-            append!(iter_samples, play_one_episode!(trainer))
+            append!(trainer.samples_iter, play_one_episode!(trainer))
         end
-        push!(trainer.samples_iter_history, iter_samples)
+        push!(trainer.samples_iter_history, trainer.samples_iter)
 
         println("Policy Improvement")
         training_samples = []
-        for iter_samples in trainer.samples_iter_history
-            append!(training_samples, iter_samples)
+        for samples_iter in trainer.samples_iter_history
+            append!(training_samples, samples_iter)
         end
 
         samples_s = Flux.batch([sample.s for sample in training_samples]) |> device
