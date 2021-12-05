@@ -21,9 +21,15 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     symmetries = symmetries
 end
 
-bitboard_to_state(bitboard::Bitboard, ::Type{Bitboard})::Bitboard = bitboard
-bitboard_to_state(bitboard::Bitboard, ::Type{Vector})::Vector = bitboard |> bitboard_to_array |> array_to_bitvector |> Vector{Float32}
-bitboard_to_state(bitboard::Bitboard, ::Type{Matrix})::Matrix = bitboard |> bitboard_to_array
+function bitboard_to_state(bitboard::Bitboard, state_repr)
+    if state_repr == Bitboard
+        return bitboard
+    elseif state_repr <: Vector
+        return bitboard |> bitboard_to_array |> array_to_bitvector |> Vector{Float32}
+    elseif state_repr <: Matrix
+        return bitboard |> bitboard_to_array
+    end
+end
 
 state_to_bitboard(s::Bitboard)::Bitboard = s
 state_to_bitboard(s::Vector)::Bitboard = BitVector(s.>0) |> bitvector_to_array |> array_to_bitboard
