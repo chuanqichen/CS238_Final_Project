@@ -21,25 +21,13 @@ using Game2048: Bitboard, Dirs, initbboard, move, add_tile, bitboard_to_array
     symmetries = symmetries
 end
 
-function bitboard_to_state(state_repr, bitboard::Bitboard)
-    if state_repr == Bitboard
-        return bitboard
-    elseif state_repr <: Vector
-        return bitboard |> bitboard_to_array |> array_to_bitvector |> Vector{Float32}
-    elseif state_repr <: Matrix
-        return bitboard |> bitboard_to_array
-    end
-end
+bitboard_to_state(bitboard::Bitboard, ::Type{Bitboard})::Bitboard = bitboard
+bitboard_to_state(bitboard::Bitboard, ::Type{Vector})::Vector = bitboard |> bitboard_to_array |> array_to_bitvector |> Vector{Float32}
+bitboard_to_state(bitboard::Bitboard, ::Type{Matrix})::Matrix = bitboard |> bitboard_to_array
 
-function state_to_bitboard(s)::Bitboard
-    if     isa(s, Bitboard)
-        return s
-    elseif isa(s, Vector)
-        return BitVector(s.>0) |> bitvector_to_array |> array_to_bitboard
-    elseif isa(s, Matrix)
-        return s |> array_to_bitboard
-    end
-end
+state_to_bitboard(s::Bitboard)::Bitboard = s
+state_to_bitboard(s::Vector)::Bitboard = BitVector(s.>0) |> bitvector_to_array |> array_to_bitboard
+state_to_bitboard(s::Matrix)::Bitboard = s |> array_to_bitboard
 
 # Mandatory functions for CommonRLInterface
 function rli.reset!(env::Env2048)
@@ -47,7 +35,7 @@ function rli.reset!(env::Env2048)
     env.curr_step = 0
 end
 rli.actions(env::Env2048) = Vector(0:Dirs.size-1)
-rli.observe(env::Env2048) = bitboard_to_state(env.state_repr, env.board)
+rli.observe(env::Env2048) = bitboard_to_state(env.board, env.state_repr)
 rli.terminated(env::Env2048) = terminated(env.board, env.goal, env.curr_step, env.max_step)
 function rli.act!(env::Env2048, action::Integer)
     _, board_next, r, _ = transition(env.board, action, env.goal, env.curr_step, env.max_step)
@@ -78,7 +66,7 @@ end
 function transition(s, action::Integer, goal, curr_step::Int, max_step::Number)
     board = state_to_bitboard(s)
     board_next = move(s, Dirs(action)) |> add_tile
-    s′ = bitboard_to_state(typeof(s), board_next)
+    s′ = bitboard_to_state(board_next, typeof(s))
 
     new_step = curr_step + 1
     done = terminated(board_next, goal, new_step, max_step)
@@ -143,7 +131,7 @@ function symmetries(state)
     board_rolt2_vflip = reverse(board_rotl2, dims=2)
     board_rolt3_vflip = reverse(board_rotl3, dims=2)
     
-    transform(bm) = bitboard_to_state(input_type, array_to_bitboard(bm))
+    transform(bm) = bitboard_to_state(array_to_bitboard(bm), input_type)
     return [
         (board_rotl1       |> transform, [3,4,2,1]),
         (board_rotl2       |> transform, [2,1,4,3]),
@@ -194,12 +182,7 @@ function bitvector_to_array(bv)
     return bm
 end
 
-
-get_value(board::Bitboard) = sum(2^power for power in bitboard_to_array(board))
-
-
 Game2048.move(s, direction::Dirs) = move(state_to_bitboard(s), direction)
-
 
 function play_game(env::Env2048, mcts_nn; τ::Float64 = 0.0, verbose::Bool = false)
     rli.reset!(env)
@@ -258,5 +241,7 @@ function compare_score(best_tile, best_score, tile::Number, score::Number)
 
     return best_tile, best_score, bested
 end
+
+get_value(board::Bitboard) = sum(2^power for power in bitboard_to_array(board))
 
 # AlphaZero.Scripts.test_game(GameSpec())
